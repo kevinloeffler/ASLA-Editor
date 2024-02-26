@@ -15,16 +15,22 @@ jobs:
       with:
         node-version: 20
 
+    - name: install Rust stable
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Install Dependencies
-      run: |
-        npm install
+      run: npm install
 
     - name: Build App for Windows
-      run: |
-        npm run tauri build --target win
+      run: npm run tauri build
+      # run: npm run tauri build --target win
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: tauri-build
-        path: target/tauri-app-win
+    - uses: tauri-apps/tauri-action@v0
+      #env:
+      #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    #- name: Upload Artifacts
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: tauri-build
+    #    path: target/tauri-app-win

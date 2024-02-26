@@ -31,7 +31,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: tauri-build
-        path: target
+        path: src-tauri/target
 
       # run: npm run tauri build --target win
 

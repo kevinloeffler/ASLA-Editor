@@ -14,7 +14,7 @@
     "allowlist": {
       "http": {
         "all": true,
-        "scope": ["https://jsonplaceholder.typicode.com/*"]
+        "scope": ["https://jsonplaceholder.typicode.com/*", "http://localhost:8000/*"]
       },
       "dialog": {
         "all": true,

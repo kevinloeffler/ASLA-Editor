@@ -10,7 +10,7 @@
 
 <script lang="ts">
     import { open } from '@tauri-apps/api/dialog'
-    import {fs} from '@tauri-apps/api'
+    import { fs } from '@tauri-apps/api'
     import { fetch } from '@tauri-apps/api/http'
 
     let selectedDirectory: Optional<string>
@@ -31,10 +31,29 @@
     }
 
     async function postImage() {
+        const images = await getImages()
+        const formData = new FormData()
+
+        formData.append('name', 'test')
+        formData.append('image', images[0]);
+
+        const options = {
+            method: 'POST',
+            body: formData,
+        }
+
+        const response = await fetch('http://localhost:8000/image/',{
+            method: 'POST', body: { type: 'Form', payload: formData }
+        })
+
+        console.log(response)
+
+        /*
         const response = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
             method: 'GET'
         })
         console.log('response:', response)
+        */
     }
 
     async function getImages() {
@@ -44,10 +63,12 @@
         }
 
         const files = await fs.readDir(selectedDirectory)
-        console.log('FILES:')
-        for (const file of files) {
-            console.log(file)
-        }
+        // console.log('FILES:')
+        // for (const file of files) {
+        //     console.log(file)
+        // }
+
+        return files
     }
 
 </script>

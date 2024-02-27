@@ -23,9 +23,19 @@ jobs:
 
     - name: Build App for Windows
       run: npm run tauri build
+
+    - name: Log
+      run: "pwd"
+
+    - name: Upload Tauri Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-build
+        path: src-tauri/target/release/bundle
+
       # run: npm run tauri build --target win
 
-    - uses: tauri-apps/tauri-action@v0
+    #- uses: tauri-apps/tauri-action@v0
       #env:
       #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

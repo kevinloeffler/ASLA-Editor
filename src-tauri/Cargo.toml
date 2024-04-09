@@ -17,10 +17,12 @@ tauri-build = { version = "1.5.1", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.6.0", features = [ "http-all", "path-all", "fs-all", "dialog-all"] }
+tauri = { version = "1.6.0", features = [ "protocol-asset", "http-all", "path-all", "fs-all", "dialog-all"] }
 tauri-dialog = "0.1.1"
-image = "0.24.8"
+image = "0.25.0"
 reqwest = { version = "0.11.24", features = ["multipart"] }
+base64 = "0.22.0"
+rayon = "1.8.1"
 
 [dependencies.windows-targets]
 version = "0.52.3"
@@ -30,3 +32,12 @@ version = "0.52.3"
 # If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
 # DO NOT REMOVE!!
 custom-protocol = [ "tauri/custom-protocol" ]
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package.base64]
+opt-level = 2
+
+[profile.dev.package.image]
+opt-level = 2

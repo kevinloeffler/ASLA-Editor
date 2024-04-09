@@ -14,7 +14,7 @@
     "allowlist": {
       "http": {
         "all": true,
-        "scope": ["https://jsonplaceholder.typicode.com/*", "http://localhost:8000/*"]
+        "scope": ["http://localhost:8000/*"]
       },
       "dialog": {
         "all": true,
@@ -26,10 +26,14 @@
       },
       "fs": {
         "all": true,
-        "scope": ["$HOME/*", "$HOME/**"]
+        "scope": ["$HOME/*", "$HOME/**", "$APPCONFIG/**"]
       },
       "path": {
         "all": true
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": ["$APPCONFIG/**"]
       }
     },
     "bundle": {
@@ -73,11 +77,51 @@
     },
     "windows": [
       {
+        "label": "main",
+        "title": "ASLA Editor",
+        "url": "",
         "fullscreen": false,
         "height": 600,
+        "minHeight": 300,
+        "width": 800,
+        "minWidth": 400,
         "resizable": true,
-        "title": "Editor",
-        "width": 800
+        "visible": false
+      },
+      {
+        "label": "launch",
+        "title": "launch",
+        "url": "launch",
+        "fullscreen": false,
+        "height": 450,
+        "width": 600,
+        "resizable": false,
+        "center": true,
+        "maximizable": false,
+        "minimizable": false,
+        "closable": false,
+        "skipTaskbar": true,
+        "decorations": false,
+        "titleBarStyle": "Transparent",
+        "hiddenTitle": true
+      },
+      {
+        "label": "welcome",
+        "title": "Willkommen",
+        "url": "launch/first",
+        "fullscreen": false,
+        "height": 300,
+        "width": 400,
+        "resizable": false,
+        "center": true,
+        "maximizable": false,
+        "minimizable": false,
+        "closable": false,
+        "skipTaskbar": true,
+        "titleBarStyle": "Transparent",
+        "hiddenTitle": true,
+        "visible": false,
+        "alwaysOnTop": true
       }
     ]
   }

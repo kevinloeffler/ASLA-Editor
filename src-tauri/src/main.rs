@@ -1,40 +1,36 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod backend_error;
-use backend_error::BackendError;
+use std::process::exit;
+use std::sync::Mutex;
+use tauri::Manager;
 
-use std::fs::File;
-use std::io::Read;
-use reqwest;
-use reqwest::multipart::{Form, Part};
-use serde_json::Value;
+mod backend_error;
+mod image_handling;
+mod windows;
+mod config_manager;
+mod editor;
+mod metadata;
 
 fn main() {
   tauri::Builder::default()
-      .invoke_handler(tauri::generate_handler![upload_image])
+      .manage(Mutex::new(editor::Editor::default()))
+      .setup(|app| {
+          // Close app when main window is closed
+          let window = app.get_window("main").expect("main window not found");
+          window.on_window_event(|event| match event {
+              tauri::WindowEvent::CloseRequested { .. } => { exit(0) }
+              _ => {}
+          });
+          Ok(())
+      })
+      .invoke_handler(tauri::generate_handler![
+          image_handling::process_image,
+          windows::start_app, windows::show_welcome_window, windows::hide_welcome_window,
+          config_manager::load_environment_file, config_manager::load_config_file,
+            config_manager::update_environment_project, config_manager::update_environment_upload,
+          editor::get_image, editor::update_image, editor::update_entities,
+      ])
       .run(tauri::generate_context!())
       .expect("error while running tauri application");
-}
-
-#[tauri::command]
-async fn upload_image(path: &str, name: String) -> Result<Value, BackendError> {
-  let endpoint = "http://127.0.0.1:8000/image/";
-
-  let mut file = File::open(path).map_err(|err| BackendError{ message: err.to_string() })?;
-  let mut buffer = Vec::new();
-  file.read_to_end(&mut buffer).map_err(|err| BackendError{ message: err.to_string() })?;
-
-  let form = Form::new()
-      .part("image", Part::bytes(buffer).file_name(name.clone()))
-      .text("name", name);
-
-  let response = reqwest::Client::new()
-      .post(endpoint)
-      .multipart(form)
-      .send()
-      .await.map_err(|err| BackendError{ message: err.to_string() })?;
-
-  let body: Value = response.json().await.map_err(|err| BackendError{ message: err.to_string() })?;
-  return Ok(body)
 }

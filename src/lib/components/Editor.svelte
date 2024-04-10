@@ -1,22 +1,25 @@
 <div class="wrapper unselectable">
 
-    <div class="image-wrapper unselectable"
-         on:mousemove={(e) => {mouseX = e.clientX; mouseY = e.clientY}}
-         on:mouseup={() => mouseUpCounter += 1}
-    >
-        <img bind:this={image} src="" alt="" class="unselectable"> <!-- Todo: add placeholder image -->
-        {#each metadata?.entities || [] as entity, index}
-            <BoundingBox position="{entity.boundingBox}"
-                         imageDimension="{imageDimension}"
-                         realDimension="{[image.clientWidth, image.clientHeight]}"
-                         mousePosition="{[mouseX, mouseY]}"
-                         mouseUpCounter="{mouseUpCounter}"
-                         entity="{entity}"
-                         on:save={(e) => handleEntitiesUpdate(e, index)}
-            />
-        {/each}
+    <div class="image-container">
+        <div class="image-wrapper unselectable" bind:this={imageWrapper}
+             on:mousemove={(e) => {mouseX = e.clientX; mouseY = e.clientY}}
+             on:mouseup={() => mouseUpCounter += 1}
+             on:wheel|preventDefault={handleImageScroll}
+        >
+            <img bind:this={image} src="" alt="" class="unselectable"> <!-- Todo: add placeholder image -->
+            {#each metadata?.entities || [] as entity, index}
+                <BoundingBox position="{entity.boundingBox}"
+                             imageDimension="{imageDimension}"
+                             realDimension="{[image.getBoundingClientRect().width, image.getBoundingClientRect().height]}"
+                             mousePosition="{[mouseX, mouseY]}"
+                             mouseUpCounter="{mouseUpCounter}"
+                             entity="{entity}"
+                             translationMatrix="{inverseMatrix}"
+                             on:save={(e) => handleEntitiesUpdate(e, index)}
+                />
+            {/each}
+        </div>
     </div>
-
 
     <div class="controls-wrapper" class:disable-controls={disableUI}>
 
@@ -146,15 +149,38 @@
     }
 
     async function handleEntitiesUpdate(e: CustomEvent, index: number) {
-        // console.log('metadata before:', metadata)
         metadata.entities[index] = e.detail
         let res = await invoke('update_entities', {path: imagePath, metadata: metadata})
-        console.log('res:', res)
-        // console.log('metadata after:', metadata)
     }
 
     function addEntity() {
         // call rust function
+    }
+
+    /********** IMAGE NAVIGATION **********/
+
+    let imageWrapper: HTMLDivElement
+    let scale = 1
+    let moveX = 0
+    let moveY = 0
+
+    $: matrix = [scale, 0, 0, scale, moveX, moveY]
+    $: inverseMatrix = [
+        1 / scale, 0, 0,
+        0, 1 / scale, 0,
+        - moveX / scale, - moveY / scale, 1
+    ]
+
+    function handleImageScroll(e: WheelEvent) {
+        scale = Math.max(0.5, Math.min(5, scale + e.deltaY * -0.005))
+        /*if (0.9 < scale && scale < 1.1) {  // snap to 100%
+            let localMatrix = matrix
+            localMatrix[0] = 1
+            localMatrix[3] = 1
+            imageWrapper.style.transform = `matrix(${matrix})`
+            return
+        }*/
+        imageWrapper.style.transform = `matrix(${matrix})`
     }
 
 </script>
@@ -165,14 +191,19 @@
     .wrapper {
         position: relative;
         display: flex;
+        align-items: center;
+    }
+
+    .image-container {
+        overflow: hidden;
+        width: 100%;
+        height: 100vh;
+        position: relative;
     }
 
     .image-wrapper {
-        position: sticky;
-        top: 0;
-        width: 100%;
-        height: 100vh;
-        background-color: var(--raised-hover-color);
+        position: relative;
+        /*transform-origin: top left;*/
     }
 
     .controls-wrapper {

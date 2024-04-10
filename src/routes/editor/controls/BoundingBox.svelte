@@ -1,8 +1,6 @@
-<div bind:this={box} class="bounding-box"
+<div bind:this={box} class="bounding-box" class:focus={editMode}
      on:mouseenter={() => showEditButton = true}
      on:mouseleave={() => showEditButton = false}>
-
-    <div class="rectangle"></div>
 
     {#if showEditButton || editMode}
         {#if editMode}
@@ -33,6 +31,7 @@
     export let mousePosition: [number, number]  // x, y viewport coordinates
     export let mouseUpCounter: number
     export let entity: Entity
+    export let translationMatrix: number[]
 
     let box: HTMLDivElement
 
@@ -53,11 +52,20 @@
     console.log(`top: ${top}, left: ${left}`)
 
     onMount(() => {
-        box.style.top = `${top - 10}px`
-        box.style.left = `${left - 10}px`
-        box.style.width = `${width + 20}px`
-        box.style.height = `${height + 20}px`
+        // let [newLeft, newTop] = translate(left, top)
+        // let [newWidth, newHeight] = translate(left + width, top + height)
+        box.style.top = `${top}px`
+        box.style.left = `${left}px`
+        box.style.width = `${width}px`
+        box.style.height = `${height}px`
     })
+
+    function translate(x: number, y: number) {
+        let newX = (translationMatrix[0] * x) / (translationMatrix[2] * x + translationMatrix[5] * y + 1)
+        let newY = (translationMatrix[4] * y) / (translationMatrix[2] * x + translationMatrix[5] * y + 1)
+        return [newX, newY]
+    }
+
 
     // dragging
     let isDragging = false
@@ -76,23 +84,26 @@
     $: mouseUpCounter, dragEnd()
 
     function update(x: number, y: number) {
+        let [tx, ty] = translate(x, y)
         switch (currentElement) {
             case 'top':
-                const topPos = y - box.offsetTop - 9
+                console.log('offsetTop:', box.offsetTop)
+                console.log('BoundingClientRect.top:', box.getBoundingClientRect().top)
+                const topPos = ty - box.offsetTop - 1
                 box.style.height = `${box.offsetHeight - topPos}px`
                 box.style.top = `${box.offsetTop + topPos}px`
                 break
             case 'bottom':
-                const bottomPos = y - box.offsetTop - box.offsetHeight + 10
+                const bottomPos = ty - box.offsetTop - box.offsetHeight + 1
                 box.style.height = `${box.offsetHeight + bottomPos}px`
                 break
             case 'left':
-                const leftPos = x - box.offsetLeft - 9
+                const leftPos = tx - box.offsetLeft - 1
                 box.style.width = `${box.offsetWidth - leftPos}px`
                 box.style.left = `${box.offsetLeft + leftPos}px`
                 break
             case 'right':
-                const rightPos = x - box.offsetLeft - box.offsetWidth + 10
+                const rightPos = tx - box.offsetLeft - box.offsetWidth + 1
                 box.style.width = `${box.offsetWidth + rightPos}px`
                 break
         }
@@ -102,10 +113,14 @@
         editMode = false
         let dimensions = box.getBoundingClientRect()
         let newBoundingBoxes = {
-            top: Math.round(dimensions.top / conversionFactor),
-            right: Math.round(dimensions.right / conversionFactor),
-            bottom: Math.round(dimensions.bottom / conversionFactor),
-            left: Math.round(dimensions.left / conversionFactor),
+            top: Math.round(box.offsetTop / conversionFactor),
+            right: Math.round((box.offsetLeft + box.offsetWidth) / conversionFactor),
+            bottom: Math.round((box.offsetTop + box.offsetHeight) / conversionFactor),
+            left: Math.round(box.offsetLeft / conversionFactor),
+            // top: Math.round(dimensions.top / conversionFactor),
+            // right: Math.round(dimensions.right / conversionFactor),
+            // bottom: Math.round(dimensions.bottom / conversionFactor),
+            // left: Math.round(dimensions.left / conversionFactor),
         }
         entity.boundingBox = newBoundingBoxes
         entity.manuallyChanged = true
@@ -119,19 +134,13 @@
 
     .bounding-box {
         position: absolute;
-        padding: 10px;
-    }
-
-    .rectangle {
-        width: 100%;
-        height: 100%;
         border: 2px var(--red) solid;
     }
 
     button {
         position: absolute;
-        left: 10px;
-        top: -8px;
+        top: -20px;
+        left: -2px;
 
         display: flex;
         align-items: center;
@@ -155,7 +164,7 @@
     }
 
     #handle-top {
-        top: 6px;
+        top: -5px;
         left: calc(50% - 8px);
         width: 20px;
         height: 8px;
@@ -163,7 +172,7 @@
     }
 
     #handle-right {
-        right: 7px;
+        right: -5px;
         top: calc(50% - 10px);
         width: 8px;
         height: 20px;
@@ -171,7 +180,7 @@
     }
 
     #handle-bottom {
-        bottom: 7px;
+        bottom: -5px;
         left: calc(50% - 8px);
         width: 20px;
         height: 8px;
@@ -179,11 +188,15 @@
     }
 
     #handle-left {
-        left: 7px;
+        left: -5px;
         top: calc(50% - 10px);
         width: 8px;
         height: 20px;
         cursor: col-resize;
+    }
+
+    .focus {
+        z-index: 99;
     }
 
 </style>

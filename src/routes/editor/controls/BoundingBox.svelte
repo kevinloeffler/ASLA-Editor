@@ -10,6 +10,8 @@
         {/if}
     {/if}
 
+    <p class="entity-label">{entity.label}</p>
+
     {#if editMode}
         <div id="handle-top" class="handle" on:mousedown={() => dragStart('top')}></div>
         <div id="handle-right" class="handle" on:mousedown={() => dragStart('right')}></div>
@@ -26,46 +28,34 @@
     const dispatch = createEventDispatcher()
 
     export let position: {top: number, right: number, bottom: number, left: number}
-    export let imageDimension: [Optional<number>, Optional<number>]  // width, height
-    export let realDimension: [Optional<number>, Optional<number>]  // width, height
+    export let imageDimension: [number, number]  // width, height
+    export let realDimension: [number, number]  // width, height
     export let mousePosition: [number, number]  // x, y viewport coordinates
     export let mouseUpCounter: number
     export let entity: Entity
-    export let translationMatrix: number[]
 
     let box: HTMLDivElement
 
     let showEditButton = false
     let editMode: boolean
 
-    let conversionFactor = (realDimension[0] || 1) / (imageDimension[0] || 1)
-
-    let width = Math.round((position.right - position.left) * conversionFactor)
-    let height = Math.round((position.bottom - position.top) * conversionFactor)
-    let top = Math.round(position.top * conversionFactor)
-    let left = Math.round(position.left * conversionFactor)
-
-    console.log('imageDim:', imageDimension)
-    console.log('realDim:', realDimension)
-    console.log('conv factor:', conversionFactor)
-    console.log(`width: ${width}, height: ${height}`)
-    console.log(`top: ${top}, left: ${left}`)
+    $: conversionFactor = (realDimension[0] || 1) / (imageDimension[0] || 1)
 
     onMount(() => {
-        // let [newLeft, newTop] = translate(left, top)
-        // let [newWidth, newHeight] = translate(left + width, top + height)
+        drawBox(conversionFactor)
+    })
+
+    function drawBox(factor: number) {
+        let width = Math.round((position.right - position.left) * factor)
+        let height = Math.round((position.bottom - position.top) * factor)
+        let top = Math.round(position.top * factor)
+        let left = Math.round(position.left * factor)
+
         box.style.top = `${top}px`
         box.style.left = `${left}px`
         box.style.width = `${width}px`
         box.style.height = `${height}px`
-    })
-
-    function translate(x: number, y: number) {
-        let newX = (translationMatrix[0] * x) / (translationMatrix[2] * x + translationMatrix[5] * y + 1)
-        let newY = (translationMatrix[4] * y) / (translationMatrix[2] * x + translationMatrix[5] * y + 1)
-        return [newX, newY]
     }
-
 
     // dragging
     let isDragging = false
@@ -84,43 +74,37 @@
     $: mouseUpCounter, dragEnd()
 
     function update(x: number, y: number) {
-        let [tx, ty] = translate(x, y)
+        let boundingClientRect = box.getBoundingClientRect()
+
         switch (currentElement) {
             case 'top':
-                console.log('offsetTop:', box.offsetTop)
-                console.log('BoundingClientRect.top:', box.getBoundingClientRect().top)
-                const topPos = ty - box.offsetTop - 1
-                box.style.height = `${box.offsetHeight - topPos}px`
-                box.style.top = `${box.offsetTop + topPos}px`
+                let deltaTop = boundingClientRect.top - y
+                box.style.height = `${box.offsetHeight + deltaTop}px`
+                box.style.top = `${box.offsetTop - deltaTop}px`
                 break
             case 'bottom':
-                const bottomPos = ty - box.offsetTop - box.offsetHeight + 1
-                box.style.height = `${box.offsetHeight + bottomPos}px`
+                let deltaBottom = y - boundingClientRect.bottom
+                box.style.height = `${box.offsetHeight + deltaBottom}px`
                 break
             case 'left':
-                const leftPos = tx - box.offsetLeft - 1
-                box.style.width = `${box.offsetWidth - leftPos}px`
-                box.style.left = `${box.offsetLeft + leftPos}px`
+                let deltaLeft = boundingClientRect.left - x
+                box.style.width = `${box.offsetWidth + deltaLeft}px`
+                box.style.left = `${box.offsetLeft - deltaLeft}px`
                 break
             case 'right':
-                const rightPos = tx - box.offsetLeft - box.offsetWidth + 1
-                box.style.width = `${box.offsetWidth + rightPos}px`
-                break
+                let deltaRight = x - boundingClientRect.right
+                box.style.width = `${box.offsetWidth + deltaRight}px`
         }
     }
 
     function save() {
         editMode = false
-        let dimensions = box.getBoundingClientRect()
+        // let dimensions = box.getBoundingClientRect()
         let newBoundingBoxes = {
             top: Math.round(box.offsetTop / conversionFactor),
             right: Math.round((box.offsetLeft + box.offsetWidth) / conversionFactor),
             bottom: Math.round((box.offsetTop + box.offsetHeight) / conversionFactor),
             left: Math.round(box.offsetLeft / conversionFactor),
-            // top: Math.round(dimensions.top / conversionFactor),
-            // right: Math.round(dimensions.right / conversionFactor),
-            // bottom: Math.round(dimensions.bottom / conversionFactor),
-            // left: Math.round(dimensions.left / conversionFactor),
         }
         entity.boundingBox = newBoundingBoxes
         entity.manuallyChanged = true
@@ -134,13 +118,29 @@
 
     .bounding-box {
         position: absolute;
-        border: 2px var(--red) solid;
+        border: 1.5px var(--red) solid;
+    }
+
+    .entity-label {
+        display: inline-block;
+        position: relative;
+        top: -19px;
+        left: -1.5px;
+
+        height: 12px;
+        padding: 0 2px;
+
+        font-size: 8px;
+        color: var(--background-color);
+        background-color: var(--red);
+
+        border-radius: 2px;
     }
 
     button {
         position: absolute;
-        top: -20px;
-        left: -2px;
+        top: -1px;
+        left: -1px;
 
         display: flex;
         align-items: center;

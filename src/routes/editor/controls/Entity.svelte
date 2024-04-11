@@ -3,17 +3,32 @@
         <label for="{entity.label}">{entity.label}</label>
         <div>
             <button class="crop"><img src="/assets/icons/editor-crop-icon.svg" alt="Zuschneiden"></button>
-            <button class="delete"><img src="/assets/icons/editor-delete-icon.svg" alt="Löschen"></button>
+            <button class="delete" on:click={deleteEntity}>
+                <img src="/assets/icons/editor-delete-icon.svg" alt="Löschen">
+            </button>
         </div>
     </div>
 
-    <input id="{entity.label}" type="text" bind:value={entity.text}>
+    <input id="{entity.label}" type="text" bind:value={entity.text} on:change={save}>
 </div>
 
 
 <script lang="ts">
 
+    import {createEventDispatcher} from 'svelte'
+    const dispatch = createEventDispatcher()
+
     export let entity: Entity
+
+    function save(_: InputEvent) {
+        entity.manuallyChanged = true
+        dispatch('save', entity)
+    }
+
+    function deleteEntity() {
+        console.log('dispatching delete')
+        dispatch('delete', {})
+    }
 
 </script>
 

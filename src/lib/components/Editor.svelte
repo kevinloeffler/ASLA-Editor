@@ -1,27 +1,31 @@
-
 <div class="page">
 
+    <!-- IMAGE -->
+
     <div class="image-wrapper"
-         on:mousemove={(e) => {mouseX = e.clientX; mouseY = e.clientY}}
-         on:mouseup={() => mouseUpCounter += 1}
+         on:mousemove={handleMouseMove}
+         on:mousedown={handleMouseDown}
+         on:mouseup={handleMouseUp}
          on:wheel|preventDefault={handleImageScroll}
+         on:mouseleave={() => dragging = false}
+         class:dragging={dragging}
+         aria-hidden="true"
     >
-        <div class="image-container" bind:this={imageContainer}>
-            <img class="image" bind:this={image} src="" alt=""> <!-- Todo: add placeholder image -->
-            {#if imageContainerDimension && imageContainerDimension[0] > 0}
-                {#each metadata?.entities || [] as entity, index}
-                    <BoundingBox position="{entity.boundingBox}"
-                                 imageDimension="{imageDimension}"
-                                 realDimension="{imageContainerDimension}"
-                                 mousePosition="{[mouseX, mouseY]}"
-                                 mouseUpCounter="{mouseUpCounter}"
-                                 entity="{entity}"
-                                 on:save={(e) => handleEntitiesUpdate(e, index)}
-                    />
-                {/each}
-            {/if}
-            </div>
+        <div class="image-container" bind:this={imageContainer}
+             bind:clientWidth={containerWidth}
+        >
+            <img src="" alt="" bind:this={image} class="image">
+
+            {#each metadata?.entities || [] as entity, index}
+                <BoundingBox entity="{entity}" scaleFactor="{scaleTranslationFactor}"
+                             on:save={(e) => handleEntitiesUpdate(e, index)}
+                />
+            {/each}
+        </div>
+
     </div>
+
+    <!-- CONTROLS -->
 
     <div class="controls-wrapper" class:disable-controls={disableUI}>
 
@@ -30,7 +34,7 @@
         <div class="control-block">
             <h2>Texterkennung</h2>
             {#each metadata?.entities || [] as entity, index}
-                <Entity entity="{entity}"
+                <EntityComponent entity="{entity}"
                         on:save={(e) => handleEntitiesUpdate(e, index)}
                         on:delete={(_) => handleEntityDelete(index)}
                 />
@@ -49,24 +53,24 @@
                     min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.contrast || 1}"
             />
             <WhiteBalanceSlider
-                on:update={debounce(handleGradingUpdate)}
-                min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.whiteBalance || 1}"
+                    on:update={debounce(handleGradingUpdate)}
+                    min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.whiteBalance || 1}"
             />
         </div>
 
         {#if dev}
-        <div class="control-block">
-            <h2>Debug</h2>
-            <p>updateRequested: {updateRequested}</p>
-            <p>isUpdating: {isUpdating}</p>
-            <p>disableUI: {disableUI}</p>
-        </div>
+            <div class="control-block">
+                <h2>Debug</h2>
+                <p>updateRequested: {updateRequested}</p>
+                <p>isUpdating: {isUpdating}</p>
+                <p>disableUI: {disableUI}</p>
+            </div>
         {/if}
 
-        <a href="/">Back</a>
+        <a href="/">Home</a>
+        <button on:click={resetTransformation}>Center image</button>  <!-- TODO: implement this with a CMD + 0 -->
 
     </div>
-
 </div>
 
 
@@ -75,53 +79,61 @@
 
     import {onMount} from 'svelte'
     import {invoke} from '@tauri-apps/api/tauri'
+    import {dev} from '$app/environment'
     import BrightnessSlider from '../../routes/editor/controls/BrightnessSlider.svelte'
     import ContrastSlider from '../../routes/editor/controls/ContrastSlider.svelte'
     import WhiteBalanceSlider from '../../routes/editor/controls/WhiteBalanceSlider.svelte'
-    import Entity from '../../routes/editor/controls/Entity.svelte'
-    import BoundingBox from '../../routes/editor/controls/BoundingBox.svelte'
-    import {dev} from '$app/environment'
+    import EntityComponent from '../../routes/editor/controls/Entity.svelte'
+    import BoundingBox from '../../routes/editor/BoundingBox.svelte'
 
     export let imagePath: string
     let metadata: Metadata
 
-    // state
-    let disableUI = false
-    let updateRequested = false
-    let isUpdating = false
-
-    let image: HTMLImageElement
-
-    let mouseX = 0
-    let mouseY = 0
-    let mouseUpCounter = 0
+    let image: HTMLImageElement // new Image()
     let imageContainer: HTMLDivElement
-    let imageContainerDimension: [number, number]
-    let imageDimension: [number, number]
 
-    onMount(async () => {
+    let imageWidth: number = 0
+    let imageHeight: number = 0
+    let containerWidth: number
+    $: scaleTranslationFactor = imageWidth / containerWidth
+
+    let disableUI = false
+    let isUpdating = false
+    let updateRequested = false
+
+    onMount( async () => {
+        // ctx = canvas.getContext('2d')!
         await getImage(imagePath)
-        // fix size of image container
-        imageContainer.style.width = `${imageContainerDimension[0]}px`
-        imageContainer.style.minWidth = `${imageContainerDimension[0]}px`
+
+        // imageContainer.style.width = `${imageWidth}px`
+        // imageContainer.style.height = `${imageHeight}px`
     })
 
+
+    /********** DATA **********/
+
     async function getImage(path: string) {
-        disableUI = true
+        console.log('start getImage')
+        const response: EditorResponse = await invoke('get_image', {path: path})
+
+        image.src = 'data:image/png;base64, ' + response[0]
+        imageWidth = image.naturalWidth
+        imageHeight = image.naturalHeight
+        metadata = response[1]
+    }
+
+    async function updateImage() {
         try {
-            const result: EditorResponse = await invoke('get_image', {path: path})
-            image.src = 'data:image/png;base64, ' + result[0]
-            metadata = result[1]
+            isUpdating = true
+            updateRequested = false
 
-            imageDimension = [image.naturalWidth, image.naturalHeight]
-            while (imageDimension[0] == 0) {
-                // wait until image is rendered to the dom
-                await new Promise(r => setTimeout(r, 10))
-                imageDimension = [image.naturalWidth, image.naturalHeight]
+            const result = await invoke('update_image', {metadata: metadata})
+            image.src = 'data:image/png;base64, ' + result
+
+            isUpdating = false
+            if (updateRequested) {
+                await updateImage()
             }
-            imageContainerDimension = [imageContainer.getBoundingClientRect().width, imageContainer.getBoundingClientRect().height]
-
-            disableUI = false
         } catch (err) {
             console.error(err)
         }
@@ -145,31 +157,82 @@
         updateImage()
     }
 
-    async function updateImage() {
-        try {
-            isUpdating = true
-            updateRequested = false
-
-            const result = await invoke('update_image', {metadata: metadata})
-            image.src = 'data:image/png;base64, ' + result
-
-            isUpdating = false
-            if (updateRequested) {
-                await updateImage()
-            }
-        } catch (err) {
-            console.error(err)
-        }
-    }
-
     function debounce(func: Function, delay = 50) {
         let timeoutId: ReturnType<typeof setTimeout>;
-
         return function(this: any, ...args: any[]) {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func.apply(this, args), delay);
         };
     }
+
+    /********** NAVIGATION **********/
+
+    let scale = 1
+    let moveX = 0
+    let moveY = 0
+
+    let dragging = false
+
+    let lastMouseX = 0
+    let lastMouseY = 0
+
+    function handleImageScroll(e: WheelEvent) {
+        const newScale = Math.max(0.5, Math.min(5, scale + e.deltaY * -0.005))
+
+        // apply translation according to cursor position -> scroll center is the mouse
+        // the last mouse position is saved, if the scrolls when the mouse is not on the image wrapper or container
+        //  (e.g. a bounding box) then the cached value is used.
+        let x = lastMouseX
+        let y = lastMouseY
+
+        if (e.target === e.currentTarget || e.target === imageContainer) {  // check if the mouse is on the image
+            x = lastMouseX = Math.round((e.offsetX * scaleTranslationFactor) - imageWidth / 2)
+            y = lastMouseY = Math.round((e.offsetY * scaleTranslationFactor) - imageHeight / 2)
+        }
+
+        const x1 = scale * x + moveX
+        const y1 = scale * y + moveY
+        const x2 = newScale * x + moveX
+        const y2 = newScale * y + moveY
+        const deltaX = Math.round(x2 - x1)
+        const deltaY = Math.round(y2 - y1)
+
+        moveX -= deltaX * (1 / scaleTranslationFactor)
+        moveY -= deltaY * (1 / scaleTranslationFactor)
+
+        const margin = Math.floor(containerWidth * 0.05) - newScale * 200
+        moveX = Math.max(-containerWidth / 2 + margin, Math.min(containerWidth / 2 - margin, moveX))
+        moveY = Math.max(-containerWidth / 2 + margin, Math.min(containerWidth / 2 - margin, moveY))
+
+        scale = newScale
+        render()
+    }
+
+    function handleMouseMove(e: MouseEvent) {
+        if (dragging) {
+            const margin = Math.floor(containerWidth * 0.05) - scale * 200
+            moveX = Math.max(-containerWidth / 2 + margin, Math.min(containerWidth / 2 - margin, moveX + e.movementX))
+            moveY = Math.max(-containerWidth / 2 + margin, Math.min(containerWidth / 2 - margin, moveY + e.movementY))
+            render()
+        }
+    }
+
+    function handleMouseDown() { dragging = true }
+    function handleMouseUp() { dragging = false }
+
+    function resetTransformation() {
+        scale = 1
+        moveX = 0
+        moveY = 0
+        render()
+    }
+
+    function render() {
+        const matrix = [scale, 0, 0, scale, moveX, moveY]
+        imageContainer.style.transform = `matrix(${matrix})`
+    }
+
+    /********* ENTITIES *********/
 
     async function handleEntitiesUpdate(e: CustomEvent, index: number) {
         metadata.entities[index] = e.detail
@@ -178,17 +241,16 @@
     }
 
     async function handleEntityDelete(index: number) {
-        console.log('deleting entity...')
         metadata.entities.splice(index, 1)
         metadata = metadata
         let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }
 
     async function addEntity() {
-        let x = imageDimension [0] / 2 - 600
-        let y = imageDimension[1] / 2 - 200
+        let x = imageWidth / 2 - 600
+        let y = imageHeight / 2 - 200
         metadata.entities.push({
-            label: 'client',
+            label: 'O',
             text: '',
             boundingBox: {top: y, left: x, bottom: y + 100, right: x + 300},
             manuallyChanged: true,
@@ -197,21 +259,8 @@
         let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }
 
-    /********** IMAGE NAVIGATION **********/
-
-    let scale = 1
-    let moveX = 0
-    let moveY = 0
-
-    $: matrix = [scale, 0, 0, scale, moveX, moveY]
-
-    function handleImageScroll(e: WheelEvent) {
-        scale = Math.max(0.5, Math.min(5, scale + e.deltaY * -0.005))
-        imageContainer.style.transform = `matrix(${matrix})`
-    }
 
 </script>
-
 
 <style>
 
@@ -222,22 +271,31 @@
     .image-wrapper {
         width: 100%;
         height: 100vh;
-        overflow: hidden;
+
+        position: sticky;
+        top: 0;
+
         display: flex;
         justify-content: center;
         align-items: center;
-        position: sticky;
-        top: 0;
-        user-select: none;
-        -webkit-user-select: none;
+
+        overflow: hidden;
     }
 
     .image-container {
         position: relative;
+        transform-origin: center;
+
+        user-select: none;
+        -webkit-user-select: none;
     }
 
     .image {
         pointer-events: none;
+    }
+
+    .dragging {
+        cursor: grab;
     }
 
     .controls-wrapper {
@@ -262,6 +320,15 @@
         pointer-events: none;
     }
 
+    .add-entity-button {
+        border: none;
+        border-radius: 4px;
+        padding: 4px 0;
+        background-color: var(--background-color);
+        font-weight: 500;
+        cursor: pointer;
+    }
+
     h1 {
         font-size: 28px;
         line-height: 28px;
@@ -271,13 +338,5 @@
         font-size: 18px;
     }
 
-    .add-entity-button {
-        border: none;
-        border-radius: 4px;
-        padding: 4px 0;
-        background-color: var(--background-color);
-        font-weight: 500;
-        cursor: pointer;
-    }
 
 </style>

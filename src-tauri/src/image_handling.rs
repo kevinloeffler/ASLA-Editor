@@ -19,7 +19,7 @@ pub async fn process_image(path: &str, name: String) -> Result<Value, BackendErr
 }
 
 async fn upload_image(path: &str, name: String) -> Result<Value, BackendError> {
-    let endpoint = "http://127.0.0.1:8000/image/";  // TODO: replace with string from settings
+    let endpoint = "http://127.0.0.1:1415/image/";  // TODO: replace with string from settings
 
     let mut file = File::open(path).map_err(|err| handle_error(err))?;
     let mut buffer = Vec::new();
@@ -66,7 +66,7 @@ fn handle_conn_error(message: &str) -> Value {
 }
 
 async fn save_image_and_prediction(image_path: &str, metadata: &Value) -> Result<(), BackendError> {
-    let output_dir = "/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/working directory/"; // TODO: replace with path from settings
+    let output_dir = "/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/projects/CRE/working/"; // TODO: replace with path from settings
     let from_path = Path::new(image_path);
     let file_name = from_path.file_name().ok_or(handle_string_error("Could not extract filename from path"))?;
     let to_path = Path::new(output_dir).join(file_name);

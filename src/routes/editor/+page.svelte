@@ -1,5 +1,5 @@
 <section class="page">
-    <Editor imagePath="/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/example images/cre_2.jpg"/>
+    <Editor imagePath="/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/projects/CRE/working/cre_test.JPG"/>
 </section>
 
 

@@ -16,11 +16,13 @@
         >
             <img src="" alt="" bind:this={image} class="image">
 
-            {#each metadata?.entities || [] as entity, index}
-                <BoundingBox entity="{entity}" scaleFactor="{scaleTranslationFactor}"
+           {#each displayEntities.filter(e => e.entity.hasBoundingBox) || [] as entity, index}
+                <BoundingBox displayEntity="{entity}" scaleFactor="{scaleTranslationFactor}"
                              on:save={(e) => handleEntitiesUpdate(e, index)}
                 />
             {/each}
+
+            <DrawBoundingBox scalingFactor="{scaleTranslationFactor}" bind:this={drawingOverlay} />
         </div>
 
     </div>
@@ -33,10 +35,11 @@
 
         <div class="control-block">
             <h2>Texterkennung</h2>
-            {#each metadata?.entities || [] as entity, index}
-                <EntityComponent entity="{entity}"
-                        on:save={(e) => handleEntitiesUpdate(e, index)}
-                        on:delete={(_) => handleEntityDelete(index)}
+            {#each displayEntities || [] as displayEntity, index}
+                <EntityComponent bind:displayEntity="{displayEntity}"
+                                 on:save={(e) => handleEntitiesUpdate(e, index)}
+                                 on:delete={(_) => handleEntityDelete(index)}
+                                 on:start-drawing={(e) => startDrawingBoundingBox(e, index)}
                 />
             {/each}
             <button on:click={addEntity} class="add-entity-button">Text hinzufügen</button>
@@ -71,6 +74,11 @@
         <button on:click={resetTransformation}>Center image</button>  <!-- TODO: implement this with a CMD + 0 -->
 
     </div>
+
+    <!-- TOAST -->
+
+    <Toast bind:this={toast}/>
+
 </div>
 
 
@@ -85,9 +93,15 @@
     import WhiteBalanceSlider from '../../routes/editor/controls/WhiteBalanceSlider.svelte'
     import EntityComponent from '../../routes/editor/controls/Entity.svelte'
     import BoundingBox from '../../routes/editor/BoundingBox.svelte'
+    import Toast from '../../routes/editor/Toast.svelte'
+    import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
 
     export let imagePath: string
     let metadata: Metadata
+    let displayEntities: DisplayEntity[] = []
+    $: refreshDisplayEntities(metadata?.entities)
+
+    let toast: Toast
 
     let image: HTMLImageElement // new Image()
     let imageContainer: HTMLDivElement
@@ -101,25 +115,41 @@
     let isUpdating = false
     let updateRequested = false
 
-    onMount( async () => {
-        // ctx = canvas.getContext('2d')!
-        await getImage(imagePath)
+    let drawingOverlay: DrawBoundingBox
 
-        // imageContainer.style.width = `${imageWidth}px`
-        // imageContainer.style.height = `${imageHeight}px`
+    onMount( async () => {
+        await getImage(imagePath)
     })
 
+    function refreshDisplayEntities(entities: Optional<Entity[]>) {
+        if (!entities) return []
+        displayEntities = entities.map(e => ({entity: e, highlight: false})) || [] as DisplayEntity[]
+    }
+
+    async function startDrawingBoundingBox(e: CustomEvent, index: number) {
+        toast.show('Box von der oberen linken Ecke aus aufziehen', ()=>{console.log('hello')}, undefined)
+        const newEntity = await drawingOverlay.draw(e.detail.entity)
+        toast.hide()
+
+        await handleEntitiesUpdate({detail: newEntity} as CustomEvent, index)
+    }
 
     /********** DATA **********/
 
     async function getImage(path: string) {
-        console.log('start getImage')
-        const response: EditorResponse = await invoke('get_image', {path: path})
+        disableUI = true
+        try {
+            const response: EditorResponse = await invoke('get_image', {path: path})
 
-        image.src = 'data:image/png;base64, ' + response[0]
-        imageWidth = image.naturalWidth
-        imageHeight = image.naturalHeight
-        metadata = response[1]
+            image.src = 'data:image/png;base64, ' + response[0]
+            imageWidth = image.naturalWidth
+            imageHeight = image.naturalHeight
+            metadata = response[1]
+            disableUI = false
+        } catch (err) {
+            // TODO: handle image load error
+            console.error(err)
+        }
     }
 
     async function updateImage() {
@@ -249,14 +279,17 @@
     async function addEntity() {
         let x = imageWidth / 2 - 600
         let y = imageHeight / 2 - 200
-        metadata.entities.push({
+        const newEntity = {
             label: 'O',
             text: '',
+            hasBoundingBox: false,
             boundingBox: {top: y, left: x, bottom: y + 100, right: x + 300},
             manuallyChanged: true,
-        })
-        metadata = metadata
-        let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
+        }
+        // metadata.entities.push(newEntity)
+        await startDrawingBoundingBox({detail: {entity: newEntity}} as CustomEvent, metadata.entities.length)
+        // await handleEntitiesUpdate({detail: newEntity} as CustomEvent, metadata.entities.length)
+        // let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }
 
 

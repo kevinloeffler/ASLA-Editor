@@ -1,12 +1,12 @@
 
-<div class="bounding-box" bind:this={boundingBox}>
+<div class="bounding-box" class:bounding-box-highlight={displayEntity.highlight} bind:this={boundingBox}>
 
-    <div class="label">{entity.label}</div>
+    <div class="label">{displayEntity.entity.label}</div>
 
-    <div class="handle-area" id="top-left"
-         on:mouseup={() => isDragging = false}
+    <div class="handle-area" id="top-left" class:handle-area-current={currentArea === 'tl'}
+         on:mouseup={() => {isDragging = false; currentArea = ''}}
          on:mousemove={dragTopLeft}
-         on:mouseleave={() => isDragging = false}
+         on:mouseleave={() => {isDragging = false; currentArea = ''}}
          aria-hidden="true"
     >
         <div class="handle"
@@ -15,10 +15,10 @@
         ></div>
     </div>
 
-    <div class="handle-area" id="top-right"
-         on:mouseup={() => isDragging = false}
+    <div class="handle-area" id="top-right" class:handle-area-current={currentArea === 'tr'}
+         on:mouseup={() => {isDragging = false; currentArea = ''}}
          on:mousemove={dragTopRight}
-         on:mouseleave={() => isDragging = false}
+         on:mouseleave={() => {isDragging = false; currentArea = ''}}
          aria-hidden="true"
     >
         <div class="handle"
@@ -27,10 +27,10 @@
         ></div>
     </div>
 
-    <div class="handle-area" id="bottom-left"
-         on:mouseup={() => isDragging = false}
+    <div class="handle-area" id="bottom-left" class:handle-area-current={currentArea === 'bl'}
+         on:mouseup={() => {isDragging = false; currentArea = ''}}
          on:mousemove={dragBottomLeft}
-         on:mouseleave={() => isDragging = false}
+         on:mouseleave={() => {isDragging = false; currentArea = ''}}
          aria-hidden="true"
     >
         <div class="handle"
@@ -39,10 +39,10 @@
         ></div>
     </div>
 
-    <div class="handle-area" id="bottom-right"
-         on:mouseup={() => isDragging = false}
+    <div class="handle-area" id="bottom-right" class:handle-area-current={currentArea === 'br'}
+         on:mouseup={() => {isDragging = false; currentArea = ''}}
          on:mousemove={dragBottomRight}
-         on:mouseleave={() => isDragging = false}
+         on:mouseleave={() => {isDragging = false; currentArea = ''}}
          aria-hidden="true"
     >
         <div class="handle"
@@ -58,7 +58,7 @@
 
     import {createEventDispatcher, onMount} from 'svelte'
 
-    export let entity: Entity
+    export let displayEntity: DisplayEntity
     export let scaleFactor: number
     let isDragging = false
 
@@ -68,13 +68,15 @@
 
     $: render(scaleFactor)
 
+    let currentArea = ''
+
     function render(scale: number) {
         if (!boundingBox) return
 
-        let top = Math.round(entity.boundingBox.top / scale)
-        let left = Math.round(entity.boundingBox.left / scale)
-        let width = Math.round((entity.boundingBox.right - entity.boundingBox.left) / scale)
-        let height = Math.round((entity.boundingBox.bottom - entity.boundingBox.top) / scale)
+        let top = Math.round(displayEntity.entity.boundingBox.top / scale)
+        let left = Math.round(displayEntity.entity.boundingBox.left / scale)
+        let width = Math.round((displayEntity.entity.boundingBox.right - displayEntity.entity.boundingBox.left) / scale)
+        let height = Math.round((displayEntity.entity.boundingBox.bottom - displayEntity.entity.boundingBox.top) / scale)
 
         boundingBox.style.top = `${top}px`
         boundingBox.style.left = `${left}px`
@@ -84,6 +86,7 @@
 
     function dragTopLeft(e: MouseEvent) {
         if (!isDragging) return
+        currentArea = 'tl'
         let clientRect = boundingBox.getBoundingClientRect()
         let deltaX = Math.round((e.clientX - clientRect.left) / 3)
         let deltaY = Math.round((e.clientY - clientRect.top) / 3)
@@ -95,6 +98,7 @@
 
     function dragTopRight(e: MouseEvent) {
         if (!isDragging) return
+        currentArea = 'tr'
         let clientRect = boundingBox.getBoundingClientRect()
         let deltaX = Math.round((e.clientX - clientRect.right) / 3)
         let deltaY = Math.round((e.clientY - clientRect.top) / 3)
@@ -105,6 +109,7 @@
 
     function dragBottomRight(e: MouseEvent) {
         if (!isDragging) return
+        currentArea = 'br'
         let clientRect = boundingBox.getBoundingClientRect()
         let deltaX = Math.round((e.clientX - clientRect.right) / 3)
         let deltaY = Math.round((e.clientY - clientRect.bottom) / 3)
@@ -114,6 +119,7 @@
 
     function dragBottomLeft(e: MouseEvent) {
         if (!isDragging) return
+        currentArea = 'bl'
         let clientRect = boundingBox.getBoundingClientRect()
         let deltaX = Math.round((e.clientX - clientRect.left) / 3)
         let deltaY = Math.round((e.clientY - clientRect.bottom) / 3)
@@ -128,23 +134,27 @@
         if (!boundingBox) return
         const margin = 3  // how many pixel we account for as rounding error in the conversion
 
-        const deltaTop = entity.boundingBox.top - boundingBox.offsetTop * scaleFactor
-        const deltaRight = entity.boundingBox.right - (boundingBox.offsetLeft + boundingBox.offsetWidth) * scaleFactor
-        const deltaBottom = entity.boundingBox.bottom - (boundingBox.offsetTop + boundingBox.offsetHeight)  * scaleFactor
-        const deltaLeft = entity.boundingBox.left - boundingBox.offsetLeft * scaleFactor
+        const deltaTop = displayEntity.entity.boundingBox.top - boundingBox.offsetTop * scaleFactor
+        const deltaRight = displayEntity.entity.boundingBox.right - (boundingBox.offsetLeft + boundingBox.offsetWidth) * scaleFactor
+        const deltaBottom = displayEntity.entity.boundingBox.bottom - (boundingBox.offsetTop + boundingBox.offsetHeight) * scaleFactor
+        const deltaLeft = displayEntity.entity.boundingBox.left - boundingBox.offsetLeft * scaleFactor
 
         if (Math.abs(deltaTop) < margin &&
             Math.abs(deltaRight) < margin &&
             Math.abs(deltaBottom) < margin &&
             Math.abs(deltaLeft) < margin) return
 
-        entity.boundingBox.top = Math.round(entity.boundingBox.top - (Math.abs(deltaTop) > margin ? deltaTop : 0))
-        entity.boundingBox.right = Math.round(entity.boundingBox.right - (Math.abs(deltaRight) > margin ? deltaRight : 0))
-        entity.boundingBox.bottom = Math.round(entity.boundingBox.bottom - (Math.abs(deltaBottom) > margin ? deltaBottom : 0))
-        entity.boundingBox.left = Math.round(entity.boundingBox.left- (Math.abs(deltaLeft) > margin ? deltaLeft : 0))
+        displayEntity.entity.boundingBox.top = Math.round(
+            displayEntity.entity.boundingBox.top - (Math.abs(deltaTop) > margin ? deltaTop : 0))
+        displayEntity.entity.boundingBox.right = Math.round(
+            displayEntity.entity.boundingBox.right - (Math.abs(deltaRight) > margin ? deltaRight : 0))
+        displayEntity.entity.boundingBox.bottom = Math.round(
+            displayEntity.entity.boundingBox.bottom - (Math.abs(deltaBottom) > margin ? deltaBottom : 0))
+        displayEntity.entity.boundingBox.left = Math.round(
+            displayEntity.entity.boundingBox.left- (Math.abs(deltaLeft) > margin ? deltaLeft : 0))
 
         let dispatch = createEventDispatcher()
-        dispatch('save', entity)
+        dispatch('save', displayEntity.entity)
     }
 
 </script>
@@ -155,6 +165,10 @@
     .bounding-box {
         position: absolute;
         border: 1.2px solid var(--red);
+    }
+
+    .bounding-box-highlight {
+        box-shadow: var(--red) 0 0 20px;
     }
 
     .label {
@@ -204,8 +218,35 @@
         width: 6px;
         height: 6px;
         border-radius: 100%;
-        background-color: var(--red);
+        border: 2px solid var(--red);
+        background-color: white;
         cursor: grab;
+    }
+
+    .handle-area-current {
+        width: 60px;
+        height: 60px;
+        z-index: 9;
+    }
+
+    .handle-area-current#bottom-right {
+        bottom: -30px;
+        right: -30px;
+    }
+
+    .handle-area-current#top-left {
+        top: -30px;
+        left: -30px;
+    }
+
+    .handle-area-current#top-right {
+        top: -30px;
+        right: -30px;
+    }
+
+    .handle-area-current#bottom-left {
+        bottom: -30px;
+        left: -30px;
     }
 
 </style>

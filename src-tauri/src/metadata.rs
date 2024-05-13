@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use crate::backend_error::{BackendError, handle_error};
 
@@ -13,8 +13,10 @@ pub struct Metadata {
 pub struct Entity {
     pub label: String,
     pub text: String,
+    #[serde(rename = "hasBoundingBox")]
+    pub has_bounding_box: bool,
     #[serde(rename = "boundingBox")]
-    pub bounding_box: BoundingBox,
+    pub bounding_box: Option<BoundingBox>,
     #[serde(rename = "manuallyChanged")]
     pub manually_changed: bool,
 }

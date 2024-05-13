@@ -58,6 +58,7 @@ type Metadata = {
 type Entity = {
     label: string,
     text: string,
+    hasBoundingBox: boolean,
     boundingBox: {
         top: number,
         right: number,
@@ -65,6 +66,12 @@ type Entity = {
         left: number
     },
     manuallyChanged: boolean
+}
+
+// Entity with additional UI information
+type DisplayEntity = {
+    entity: Entity,
+    highlight: boolean
 }
 
 type EditorResponse = [string, Metadata]

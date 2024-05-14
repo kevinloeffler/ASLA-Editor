@@ -95,6 +95,7 @@
     import BoundingBox from '../../routes/editor/BoundingBox.svelte'
     import Toast from '../../routes/editor/Toast.svelte'
     import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
+    import {resolve} from '@tauri-apps/api/path'
 
     export let imagePath: string
     let metadata: Metadata
@@ -103,7 +104,7 @@
 
     let toast: Toast
 
-    let image: HTMLImageElement // new Image()
+    let image: HTMLImageElement
     let imageContainer: HTMLDivElement
 
     let imageWidth: number = 0
@@ -141,7 +142,15 @@
         try {
             const response: EditorResponse = await invoke('get_image', {path: path})
 
-            image.src = 'data:image/png;base64, ' + response[0]
+            const imageLoaded = new Promise(resolve => {
+                image.onload = resolve
+                image.src = 'data:image/png;base64, ' + response[0]
+            })
+
+            await imageLoaded
+
+            // image.src = 'data:image/png;base64, ' + response[0]
+            console.log('dims:', image.naturalWidth, image.naturalHeight)
             imageWidth = image.naturalWidth
             imageHeight = image.naturalHeight
             metadata = response[1]

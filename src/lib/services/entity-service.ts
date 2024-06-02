@@ -1,10 +1,10 @@
 
 export enum ENTITIES {
-    Location = 'loc',
-    Client = 'clt',
-    Scale = 'mst',
-    Date = 'date',
-    CreationDate = 'cdate',
+    Location = 'LOC',
+    Client = 'CLT',
+    Scale = 'MST',
+    Date = 'DATE',
+    CreationDate = 'CDATE',
     None = 'O',
 }
 

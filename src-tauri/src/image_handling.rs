@@ -52,14 +52,6 @@ fn handle_string_error(message: &str) -> BackendError {
     }
 }
 
-fn handle_conn_error(message: &str) -> Value {
-    json!({
-    "status": "error",
-    "code": 201,
-    "msg": message
-  })
-}
-
 async fn save_image_and_prediction(image_path: &str, metadata: &Value) -> Result<(), BackendError> {
     let output_dir = "/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/projects/CRE/working/"; // TODO: replace with path from settings
     let from_path = Path::new(image_path);

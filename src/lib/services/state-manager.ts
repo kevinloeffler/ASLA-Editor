@@ -46,6 +46,7 @@ class GlobalState {
     }
 
     uploadDirectory = undefined
+    apiEndpoint = undefined
 
     async init() {
         this.configFilePath = (await appConfigDir()) + '/app.config'
@@ -77,6 +78,7 @@ class GlobalState {
             const environment: any = await invoke('load_environment_file', {path: this.environmentFilePath})
             this.projectsCache = environment.projects
             this.uploadDirectory = environment.uploadDirectory
+            this.apiEndpoint = environment.apiEndpoint
         } catch (err) {
             console.error(err)
         }

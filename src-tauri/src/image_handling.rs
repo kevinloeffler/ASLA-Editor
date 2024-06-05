@@ -9,25 +9,20 @@ use reqwest::multipart::{Form, Part};
 use serde_json::{json, Value};
 
 #[tauri::command]
-pub async fn process_image(path: &str, name: String) -> Result<Value, BackendError> {
-    let prediction = upload_image(path, name).await?;
-    println!("prediction: {prediction}");
-
+pub async fn process_image(path: &str, name: String, endpoint: String) -> Result<Value, BackendError> {
+    let prediction = upload_image(path, name, endpoint).await?;
     save_image_and_prediction(path, &prediction).await?;
-    
     Ok(prediction)
 }
 
-async fn upload_image(path: &str, name: String) -> Result<Value, BackendError> {
-    let endpoint = "http://127.0.0.1:1415/image/";  // TODO: replace with string from settings
-
+async fn upload_image(path: &str, name: String, endpoint: String) -> Result<Value, BackendError> {
     let mut file = File::open(path).map_err(|err| handle_error(err))?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).map_err(|err| handle_error(err))?;
 
     let form = Form::new()
-        .part("image", Part::bytes(buffer).file_name(name.clone()))
-        .text("name", name);
+        // .text("name", name)
+        .part("image", Part::bytes(buffer).file_name(name.clone()));
 
     let response = reqwest::Client::new()
         .post(endpoint)
@@ -39,7 +34,7 @@ async fn upload_image(path: &str, name: String) -> Result<Value, BackendError> {
         let json = response.json().await.map_err(|err| handle_error(err))?;
         Ok(json)
     } else {
-        Ok(handle_conn_error("Connection error"))
+        Err(handle_string_error("Connection error"))
     }
 }
 
@@ -76,7 +71,7 @@ async fn save_image_and_prediction(image_path: &str, metadata: &Value) -> Result
     // move image to working directory
     let move_image_result = move_image(from_path, to_path.as_path());
     if !move_image_result {
-        Err(BackendError{status_code: 101, message: "Error when moving the image from the camera directory to the originals directory.".to_string()})?;
+        Err(BackendError{status_code: 101, message: "Error when moving the image from the upload directory to the working directory.".to_string()})?;
     }
     
     // write metadata to json file

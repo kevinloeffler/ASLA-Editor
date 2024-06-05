@@ -53,6 +53,9 @@ pub fn load_environment_file(path: &str) -> Result<Value, BackendError> {
     if json["uploadDirectory"].is_null() {
         return Err(BackendError {status_code: 101, message: "Missing 'uploadDirectory' field in JSON".to_string()});
     }
+    if json["apiEndpoint"].is_null() {
+        return Err(BackendError {status_code: 101, message: "Missing 'apiEndpoint' field in JSON".to_string()});
+    }
 
     Ok(json)
 }

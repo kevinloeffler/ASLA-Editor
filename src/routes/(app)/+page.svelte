@@ -6,7 +6,7 @@
     <div class="projects">
         <h2>Projekte:</h2>
         <div class="projects-list">
-            {#each state?.projects.all() || [] as project }
+            {#each projects || [] as project }
                 <ProjectThumbnail project="{project}" />
             {/each}
         </div>
@@ -30,14 +30,10 @@
 <script lang="ts">
     import ProjectThumbnail from './ProjectThumbnail.svelte'
     import {STATE} from '$lib/services/state-manager'
-    import {onMount} from 'svelte'
     import Upload from './projects/Upload.svelte'
 
-    let state: any
-
-    onMount(() => {
-        state = STATE
-    })
+    let projects: Project[]
+    STATE._projects.subscribe(value => projects = value)
 
 </script>
 

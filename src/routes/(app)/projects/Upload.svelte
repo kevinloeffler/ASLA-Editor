@@ -89,6 +89,7 @@
         background-color: var(--green);
         border-radius: 8px;
         border: none;
+        cursor: pointer;
     }
 
     .upload-button-stop {

@@ -1,5 +1,14 @@
 <div class="page">
 
+    {#if showErrorMsg}
+        <div class="error-msg">
+            <div>
+                <h2>Fehler beim Laden des Bildes</h2>
+                <button on:click={() => dispatch('handle_image_load_error')}>Anderes Bild öffnen</button>
+            </div>
+        </div>
+    {/if}
+
     <!-- IMAGE -->
 
     <div class="image-wrapper"
@@ -29,48 +38,61 @@
 
     <!-- CONTROLS -->
 
-    <div class="controls-wrapper" class:disable-controls={disableUI}>
+    <div class="side-panel">
+        <div class="controls-wrapper" class:disable-controls={disableUI}>
 
-        <h1>{imagePath.split('/').pop()?.split('.')[0] || 'Editor'}</h1>
+            <h1>{imagePath.split('/').pop()?.split('.')[0] || 'Editor'}</h1>
 
-        <div class="control-block">
-            <h2>Texterkennung</h2>
-            {#each displayEntities || [] as displayEntity, index}
-                <EntityComponent bind:displayEntity="{displayEntity}"
-                                 on:save={(e) => handleEntitiesUpdate(e, index)}
-                                 on:delete={(_) => handleEntityDelete(index)}
-                                 on:start-drawing={(e) => startDrawingBoundingBox(e, index)}
-                />
-            {/each}
-            <button on:click={addEntity} class="add-entity-button">Text hinzufügen</button>
-        </div>
-
-        <div class="control-block">
-            <h2>Bildbearbeitung</h2>
-            <BrightnessSlider
-                    on:update={debounce(handleGradingUpdate)}
-                    min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.brightness || 1}"
-            />
-            <ContrastSlider
-                    on:update={debounce(handleGradingUpdate)}
-                    min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.contrast || 1}"
-            />
-            <WhiteBalanceSlider
-                    on:update={debounce(handleGradingUpdate)}
-                    min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.whiteBalance || 1}"
-            />
-        </div>
-
-        {#if dev}
             <div class="control-block">
-                <h2>Debug</h2>
-                <p>updateRequested: {updateRequested}</p>
-                <p>isUpdating: {isUpdating}</p>
-                <p>disableUI: {disableUI}</p>
+                <h2>Texterkennung</h2>
+                {#each displayEntities || [] as displayEntity, index}
+                    <EntityComponent bind:displayEntity="{displayEntity}"
+                                     on:save={(e) => handleEntitiesUpdate(e, index)}
+                                     on:delete={(_) => handleEntityDelete(index)}
+                                     on:start-drawing={(e) => startDrawingBoundingBox(e, index)}
+                    />
+                {/each}
+                <button on:click={addEntity} class="add-entity-button">Text hinzufügen</button>
             </div>
-        {/if}
 
-        <a href="/">Home</a>
+            <div class="control-block">
+                <h2>Bildbearbeitung</h2>
+                <BrightnessSlider
+                        on:update={debounce(handleGradingUpdate)}
+                        min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.brightness || 1}"
+                />
+                <ContrastSlider
+                        on:update={debounce(handleGradingUpdate)}
+                        min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.contrast || 1}"
+                />
+                <WhiteBalanceSlider
+                        on:update={debounce(handleGradingUpdate)}
+                        min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.whiteBalance || 1}"
+                />
+            </div>
+
+            {#if dev}
+                <div class="control-block">
+                    <h2>Debug</h2>
+                    <p>updateRequested: {updateRequested}</p>
+                    <p>isUpdating: {isUpdating}</p>
+                    <p>disableUI: {disableUI}</p>
+                </div>
+            {/if}
+
+        </div>
+
+        <div class="navigation">
+            <button on:click={() => dispatch('previous_image')}>
+                <img src="/assets/icons/chevron-left.svg" alt="Bild Zurück">
+            </button>
+            <button on:click={() => location.href = '/projects/' + project?.code}>Projekt</button>
+            <button on:click={() => location.href = '/'}>Startseite</button>
+            <button on:click={() => dispatch('next_image')}>
+                <img src="/assets/icons/chevron-right.svg" alt="Bild Vorwärts">
+            </button>
+        </div>
+
         <button on:click={resetTransformation}>Center image</button>  <!-- TODO: implement this with a CMD + 0 -->
 
     </div>
@@ -85,7 +107,7 @@
 
 <script lang="ts">
 
-    import {onMount} from 'svelte'
+    import {createEventDispatcher} from 'svelte'
     import {invoke} from '@tauri-apps/api/tauri'
     import {dev} from '$app/environment'
     import BrightnessSlider from '../../routes/editor/controls/BrightnessSlider.svelte'
@@ -95,9 +117,12 @@
     import BoundingBox from '../../routes/editor/BoundingBox.svelte'
     import Toast from '../../routes/editor/Toast.svelte'
     import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
-    import {resolve} from '@tauri-apps/api/path'
+
+    const dispatch = createEventDispatcher()
 
     export let imagePath: string
+    export let project: Optional<Project>
+
     let metadata: Metadata
     let displayEntities: DisplayEntity[] = []
     $: refreshDisplayEntities(metadata?.entities)
@@ -116,11 +141,11 @@
     let isUpdating = false
     let updateRequested = false
 
+    let showErrorMsg = false
+
     let drawingOverlay: DrawBoundingBox
 
-    onMount( async () => {
-        await getImage(imagePath)
-    })
+    $: getImage(imagePath)  // reload image if path changes
 
     function refreshDisplayEntities(entities: Optional<Entity[]>) {
         if (!entities) return []
@@ -138,6 +163,7 @@
     /********** DATA **********/
 
     async function getImage(path: string) {
+        showErrorMsg = false
         disableUI = true
         try {
             const response: EditorResponse = await invoke('get_image', {path: path})
@@ -149,15 +175,18 @@
 
             await imageLoaded
 
-            // image.src = 'data:image/png;base64, ' + response[0]
             console.log('dims:', image.naturalWidth, image.naturalHeight)
             imageWidth = image.naturalWidth
             imageHeight = image.naturalHeight
             metadata = response[1]
             disableUI = false
-        } catch (err) {
-            // TODO: handle image load error
-            console.error(err)
+        } catch (err: any) {
+            if (err.message === 'No such file or directory (os error 2)') {
+                showErrorMsg = true
+            } else {
+                // handle other errors...
+                console.error(err)
+            }
         }
     }
 
@@ -295,10 +324,7 @@
             boundingBox: {top: y, left: x, bottom: y + 100, right: x + 300},
             manuallyChanged: true,
         }
-        // metadata.entities.push(newEntity)
         await startDrawingBoundingBox({detail: {entity: newEntity}} as CustomEvent, metadata.entities.length)
-        // await handleEntitiesUpdate({detail: newEntity} as CustomEvent, metadata.entities.length)
-        // let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }
 
 
@@ -308,6 +334,19 @@
 
     .page {
         display: flex;
+    }
+
+    .error-msg {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.5);
+        padding-left: 80px;
+        z-index: 999;
     }
 
     .image-wrapper {
@@ -340,7 +379,7 @@
         cursor: grab;
     }
 
-    .controls-wrapper {
+    .side-panel {
         min-width: 360px;
         padding: 12px;
         background-color: var(--background-color)
@@ -378,6 +417,30 @@
 
     h2 {
         font-size: 18px;
+    }
+
+    .navigation {
+        display: flex;
+        justify-content: space-between;
+        gap: 4px;
+    }
+
+    .navigation > button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--background-color);
+        background-color: var(--text-color);
+        border: none;
+        border-radius: 8px;
+        width: 100%;
+        padding: 6px 20px;
+        cursor: pointer;
+        transition-duration: 100ms;
+    }
+
+    .navigation > button:hover {
+        opacity: 0.8;
     }
 
 

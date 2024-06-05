@@ -29,6 +29,7 @@ fn main() {
           windows::start_app, windows::show_welcome_window, windows::hide_welcome_window,
           config_manager::load_environment_file, config_manager::load_config_file,
             config_manager::update_environment_project, config_manager::update_environment_upload,
+            config_manager::read_current_file, config_manager::update_current_file, config_manager::get_next_image,
           editor::get_image, editor::update_image, editor::update_entities,
       ])
       .run(tauri::generate_context!())

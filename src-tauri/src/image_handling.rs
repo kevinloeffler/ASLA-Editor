@@ -6,7 +6,7 @@ use std::io::{Read, Write};
 use std::path::{Path};
 use reqwest;
 use reqwest::multipart::{Form, Part};
-use serde_json::{json, Value};
+use serde_json::{Value};
 
 #[tauri::command]
 pub async fn process_image(path: &str, name: String, endpoint: String) -> Result<Value, BackendError> {

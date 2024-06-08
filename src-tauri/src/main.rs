@@ -11,6 +11,7 @@ mod windows;
 mod config_manager;
 mod editor;
 mod metadata;
+mod util;
 
 fn main() {
   tauri::Builder::default()
@@ -31,6 +32,7 @@ fn main() {
             config_manager::update_environment_project, config_manager::update_environment_upload,
             config_manager::read_current_file, config_manager::update_current_file, config_manager::get_next_image,
           editor::get_image, editor::update_image, editor::update_entities,
+          util::ping_server,
       ])
       .run(tauri::generate_context!())
       .expect("error while running tauri application");

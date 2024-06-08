@@ -1,7 +1,4 @@
 <main>
-<!--    <LoadImageDirectory />-->
-<!--    <a href="/projects">Projekte</a>-->
-<!--    <a href="/editor">Editor</a>-->
 
     <div class="projects">
         <h2>Projekte:</h2>
@@ -63,7 +60,7 @@
         background-color: var(--raised-color);
         border-radius: 8px;
         margin-bottom: 20px;
-        padding: 20px;
+        overflow: hidden;
     }
 
     .settings {

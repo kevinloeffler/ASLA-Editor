@@ -60,8 +60,8 @@ class GlobalState {
         }
     }
 
-    uploadDirectory = undefined
-    apiEndpoint = undefined
+    uploadDirectory: Optional<string> = undefined
+    apiEndpoint: Optional<string> = undefined
 
     async init() {
         this.configFilePath = (await appConfigDir()) + '/app.config'

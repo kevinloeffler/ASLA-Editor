@@ -1,5 +1,4 @@
 use std::ffi::OsString;
-use std::fmt::format;
 use std::fs;
 use std::fs::{File, write};
 use std::io::{Read, Write};

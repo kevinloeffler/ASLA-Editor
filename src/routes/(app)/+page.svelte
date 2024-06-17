@@ -7,6 +7,9 @@
                 <ProjectThumbnail project="{project}" />
             {/each}
         </div>
+        <button on:click={() => location.href = '/projects/new'} class="btn-compact new-project-btn">
+            Neues Projekt erstellen
+        </button>
     </div>
 
     <div class="row">
@@ -77,6 +80,10 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 8px;
+    }
+
+    .new-project-btn {
+        margin-top: 8px;
     }
 
 </style>

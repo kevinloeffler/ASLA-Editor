@@ -26,6 +26,7 @@ export function entityToText(entity: string) {
 }
 
 export function hashCode(obj: any) {
+    if (!obj) return 0
     let str = JSON.stringify(obj)
     let hash = 0
     for (let i = 0; i < str.length; i++) {

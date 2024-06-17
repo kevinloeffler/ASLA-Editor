@@ -33,13 +33,11 @@
 
     async function getNextImage(forward = true): Promise<Optional<string>> {
         try {
-            const next_image: string = await invoke('get_next_image', {
+            return await invoke('get_next_image', {
                 directory: `${project?.workingDirectory}`,
                 currentImage: image_name,
                 forward: forward,
             })
-            console.log('next_image:', next_image)
-            return next_image
         } catch (err) {
             console.error(err)
         }

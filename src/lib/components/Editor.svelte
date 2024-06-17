@@ -25,9 +25,9 @@
         >
             <img src="" alt="" bind:this={image} class="image">
 
-           {#each displayEntities.filter(e => e.entity.hasBoundingBox) || [] as entity, index}
+           {#each displayEntities.filter(e => e.entity.hasBoundingBox) || [] as entity (entity)}
                 <BoundingBox displayEntity="{entity}" scaleFactor="{scaleTranslationFactor}"
-                             on:save={(e) => handleEntitiesUpdate(e, index)}
+                             on:save={(e) => handleEntitiesUpdate(e.detail.oldDisplayEntity, e.detail.newDisplayEntity)}
                 />
             {/each}
 
@@ -45,11 +45,11 @@
 
             <div class="control-block">
                 <h2>Texterkennung</h2>
-                {#each displayEntities || [] as displayEntity, index}
+                {#each displayEntities || [] as displayEntity (displayEntity.entity)}
                     <EntityComponent bind:displayEntity="{displayEntity}"
-                                     on:save={(e) => handleEntitiesUpdate(e, index)}
-                                     on:delete={(_) => handleEntityDelete(index)}
-                                     on:start-drawing={(e) => startDrawingBoundingBox(e, index)}
+                                     on:save={(e) => handleEntitiesUpdate(e.detail.oldDisplayEntity, e.detail.newDisplayEntity)}
+                                     on:delete={(_) => handleEntityDelete(displayEntity)}
+                                     on:start-drawing={(e) => startDrawingBoundingBox(e.detail.displayEntity)}
                     />
                 {/each}
                 <button on:click={addEntity} class="add-entity-button">Text hinzufügen</button>
@@ -117,6 +117,7 @@
     import BoundingBox from '../../routes/editor/BoundingBox.svelte'
     import Toast from '../../routes/editor/Toast.svelte'
     import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
+    import {hashCode} from '$lib/services/entity-service'
 
     const dispatch = createEventDispatcher()
 
@@ -152,12 +153,13 @@
         displayEntities = entities.map(e => ({entity: e, highlight: false})) || [] as DisplayEntity[]
     }
 
-    async function startDrawingBoundingBox(e: CustomEvent, index: number) {
+    async function startDrawingBoundingBox(displayEntity: DisplayEntity) {
         toast.show('Box von der oberen linken Ecke aus aufziehen', ()=>{console.log('hello')}, undefined)
-        const newEntity = await drawingOverlay.draw(e.detail.entity)
+        const newEntity = await drawingOverlay.draw(displayEntity.entity)
         toast.hide()
 
-        await handleEntitiesUpdate({detail: newEntity} as CustomEvent, index)
+        metadata.entities.push(newEntity)
+        await handleEntitiesUpdate(displayEntity.entity, newEntity)
     }
 
     /********** DATA **********/
@@ -175,7 +177,6 @@
 
             await imageLoaded
 
-            console.log('dims:', image.naturalWidth, image.naturalHeight)
             imageWidth = image.naturalWidth
             imageHeight = image.naturalHeight
             metadata = response[1]
@@ -302,13 +303,17 @@
 
     /********* ENTITIES *********/
 
-    async function handleEntitiesUpdate(e: CustomEvent, index: number) {
-        metadata.entities[index] = e.detail
+    async function handleEntitiesUpdate(oldEntity: Entity, newEntity: Entity) {
+        const index = metadata.entities.findIndex(el => hashCode(el) === hashCode(oldEntity))
+        if (index === -1) return
+        metadata.entities[index] = newEntity
         metadata = metadata
         let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }
 
-    async function handleEntityDelete(index: number) {
+    async function handleEntityDelete(displayEntity: DisplayEntity) {
+        const index = metadata.entities.findIndex(el => hashCode(el) === hashCode(displayEntity.entity))
+        if (index === -1) return
         metadata.entities.splice(index, 1)
         metadata = metadata
         let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
@@ -324,9 +329,17 @@
             boundingBox: {top: y, left: x, bottom: y + 100, right: x + 300},
             manuallyChanged: true,
         }
-        await startDrawingBoundingBox({detail: {entity: newEntity}} as CustomEvent, metadata.entities.length)
-    }
+        const newDisplayEntity: DisplayEntity = {
+            entity: newEntity,
+            highlight: false,
+        }
+        await startDrawingBoundingBox(newDisplayEntity)
 
+        let elements: NodeListOf<HTMLInputElement> = document.querySelectorAll('.entity-text-input')
+        if (elements.length > 0) {
+            elements[elements.length - 1].focus()
+        }
+    }
 
 </script>
 

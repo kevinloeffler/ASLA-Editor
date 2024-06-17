@@ -62,6 +62,8 @@
     export let scaleFactor: number
     let isDragging = false
 
+    let oldDisplayEntity = {...displayEntity}
+
     let boundingBox: HTMLDivElement
 
     onMount( () => render(scaleFactor) )
@@ -154,7 +156,11 @@
             displayEntity.entity.boundingBox.left- (Math.abs(deltaLeft) > margin ? deltaLeft : 0))
 
         let dispatch = createEventDispatcher()
-        dispatch('save', displayEntity.entity)
+        dispatch('save', {
+            newDisplayEntity: displayEntity,
+            oldDisplayEntity: oldDisplayEntity,
+        })
+        oldDisplayEntity = displayEntity  // should not be necessary i think???
     }
 
 </script>

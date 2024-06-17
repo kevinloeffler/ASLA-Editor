@@ -3,19 +3,11 @@
      aria-hidden="true"
 >
     <div class="row">
-<!--        <label for="{entity.label}">{entity.label}</label>-->
         <div class="select-wrapper">
             <img class="select-chevron" src="/assets/icons/editor-label-chevron.svg" alt="Chevron nach unten">
             <select class="label-select" bind:value={displayEntity.entity.label} on:change={save}>
                 {#each Object.entries(ENTITIES) as [_, label]}
                     <option value="{label}" >{entityToText(label)}</option>
-<!--
-                    {#if label === entity.label}
-                        <option value="{label}" selected>{entityToText(label)}</option>
-                    {:else}
-                        <option value="{label}" >{entityToText(label)}</option>
-                    {/if}
--->
                 {/each}
             </select>
         </div>
@@ -34,7 +26,7 @@
         </div>
     </div>
 
-    <input id="{displayEntity.entity.label}" type="text" bind:value={displayEntity.entity.text} on:change={save}>
+    <input class="entity-text-input" type="text" bind:value={displayEntity.entity.text} on:change={save}>
 </div>
 
 
@@ -57,8 +49,12 @@
 
     function updateHasBoundingBox() {
         if (displayEntity.entity.hasBoundingBox) {
+            const oldDisplayEntity = {...displayEntity}
             displayEntity.entity.hasBoundingBox = false
-            dispatch('save', displayEntity.entity)
+            dispatch('save', {
+                oldDisplayEntity: oldDisplayEntity,
+                newDisplayEntity: displayEntity,
+            })
         } else {
             dispatch('start-drawing', displayEntity)
         }

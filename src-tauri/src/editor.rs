@@ -33,7 +33,6 @@ impl Editor {
         }
         self.current_path = path.to_string();
         self.original_image = open(path).map_err(|err| handle_error(err))?.into_rgb8();
-        // self.metadata = load_image_metadata(&*convert_jpg_to_json_path(path))?;
         Ok(())
     }
 

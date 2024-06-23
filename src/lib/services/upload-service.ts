@@ -7,7 +7,6 @@ import {STATE} from '$lib/services/state-manager'
 class UploadService {
 
     constructor(uploadDirectory: string) {
-        console.log('init upload service')
         this.uploadDirectory = uploadDirectory
         this.uploading.subscribe(value => this._uploading = value)
         this.images.subscribe(value => this._images = value)
@@ -59,7 +58,6 @@ class UploadService {
             if (image) {
                 await this.uploadImage(image)
             } else {
-                console.log('waiting')
                 await new Promise(resolve => setTimeout(resolve, 2000))
             }
             await this.refresh()
@@ -76,10 +74,22 @@ class UploadService {
 
     private async uploadImage(image: FileEntry): Promise<void> {
         try {
+            const pattern = /^ASLA_([a-zA-Z0-9]+)_.*$/
+            const match = image.name?.match(pattern)
+            const projectCode = match ? match[1] : ''
+            const project = STATE.projects.get(projectCode)
+            const artefacts = project?.artefacts || []
+            const workingDirectory = project?.workingDirectory
+            if (!workingDirectory) throw new Error('Image does not match any project')
+
             this.currentUpload.set(image.name)
-            const _: ApiResponse = await invoke('process_image',
-                {path: image.path, name: image.name, endpoint: STATE.apiEndpoint}
-            )
+            const _: ApiResponse = await invoke('process_image', {
+                path: image.path,
+                name: image.name,
+                endpoint: STATE.apiEndpoint,
+                directory: workingDirectory,
+                artefacts: artefacts,
+            })
         } catch (err) {
             this.failedImages.set([...this._failedImages, image.name!])
             console.error('Upload failed:', err)

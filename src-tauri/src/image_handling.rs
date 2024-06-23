@@ -9,29 +9,38 @@ use reqwest::multipart::{Form, Part};
 use serde_json::{Value};
 
 #[tauri::command]
-pub async fn process_image(path: &str, name: String, endpoint: String) -> Result<Value, BackendError> {
-    let prediction = upload_image(path, name, endpoint).await?;
-    save_image_and_prediction(path, &prediction).await?;
+pub async fn process_image(
+    path: &str,
+    name: String,
+    endpoint: String,
+    directory: &str,
+    artefacts: Vec<String>) -> Result<Value, BackendError>
+{
+    let prediction = upload_image(path, name, endpoint, artefacts).await?;
+    save_image_and_prediction(path, &prediction, directory).await?;
     Ok(prediction)
 }
 
-async fn upload_image(path: &str, name: String, endpoint: String) -> Result<Value, BackendError> {
-    let mut file = File::open(path).map_err(|err| handle_error(err))?;
+async fn upload_image(path: &str, name: String, endpoint: String, artefacts: Vec<String>) -> Result<Value, BackendError> {
+    let mut file = File::open(path).map_err(handle_error)?;
     let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).map_err(|err| handle_error(err))?;
+    file.read_to_end(&mut buffer).map_err(handle_error)?;
+
+    let artefacts_json = serde_json::to_string(&artefacts).map_err(handle_error)?;
+    println!("artefacts json: {}", artefacts_json);
 
     let form = Form::new()
-        // .text("name", name)
-        .part("image", Part::bytes(buffer).file_name(name.clone()));
+        .part("image", Part::bytes(buffer).file_name(name))
+        .part("artefacts", Part::text(artefacts_json));
 
     let response = reqwest::Client::new()
         .post(endpoint)
         .multipart(form)
         .send()
-        .await.map_err(|err| handle_error(err))?;
+        .await.map_err(handle_error)?;
 
     if response.status().is_success() {
-        let json = response.json().await.map_err(|err| handle_error(err))?;
+        let json = response.json().await.map_err(handle_error)?;
         Ok(json)
     } else {
         Err(handle_string_error("Connection error"))
@@ -52,8 +61,8 @@ fn handle_string_error(message: &str) -> BackendError {
     }
 }
 
-async fn save_image_and_prediction(image_path: &str, metadata: &Value) -> Result<(), BackendError> {
-    let output_dir = "/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/projects/CRE/working/"; // TODO: replace with path from settings
+async fn save_image_and_prediction(image_path: &str, metadata: &Value, output_dir: &str) -> Result<(), BackendError> {
+    // let output_dir = "/Users/kl/Kevin/Projects/ASLA/ASLA Editor test dir/projects/CRE/working/";
     let from_path = Path::new(image_path);
     let file_name = from_path.file_name().ok_or(handle_string_error("Could not extract filename from path"))?;
     let to_path = Path::new(output_dir).join(file_name);

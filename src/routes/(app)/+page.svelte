@@ -1,3 +1,4 @@
+{#if hasEnvironment}
 <main>
 
     <div class="projects">
@@ -25,6 +26,10 @@
     </div>
 
 </main>
+{:else}
+    <p class="no-env-warning">Keine Umgebung ausgewählt</p>
+    <button on:click={() => STATE.reload()} class="btn-compact">Neu Laden</button>
+{/if}
 
 
 <script lang="ts">
@@ -34,6 +39,9 @@
 
     let projects: Project[]
     STATE._projects.subscribe(value => projects = value)
+
+    let hasEnvironment: boolean
+    STATE.hasEnvironment.subscribe(value => hasEnvironment = value)
 
 </script>
 

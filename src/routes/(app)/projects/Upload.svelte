@@ -79,7 +79,6 @@
 
         try {
             const response: boolean = await invoke('ping_server', {url: url.origin + '/ping'})
-            console.log('ping:', response)
             return response
         } catch (err) {
             console.error('ping server error:', err)
@@ -93,7 +92,6 @@
     onMount(async () => {
         timer = setInterval(() => UPLOAD_SERVICE.refresh(), 2000)
         connected = await pingServer()
-        console.log('')
     })
 
     onDestroy(() => {

@@ -11,14 +11,12 @@ use crate::metadata::Metadata;
 
 #[tauri::command]
 pub fn load_config_file(path: &str) -> Result<Value, BackendError> {
-    let mut file = File::open(path).map_err(|err| handle_error(err))?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).map_err(|err| handle_error(err))?;
-    
-    let json: Value = serde_json::from_str(&contents).map_err(|err| handle_error(err))?;
+    let json: Value = read_json_file(path)?;
     
     // validate json
-    // TODO
+    if json["environment"].is_null() {
+        return Err(BackendError {status_code: 101, message: "Missing field 'environment' in config file".to_string()})
+    }
     
     Ok(json)
 }

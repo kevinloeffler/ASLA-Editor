@@ -43,7 +43,7 @@
         }
     }
 
-    async function loadCurrentImage(forceReload = false): Promise<Optional<string>> {
+    async function loadCurrentImage(forceReload = true): Promise<Optional<string>> {
         try {
             const image: string = await invoke('read_current_file', {
                 directory: `${project?.workingDirectory}`,

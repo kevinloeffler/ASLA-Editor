@@ -70,7 +70,6 @@
         if (event.target.value === '') return
         project.artefacts = [...project.artefacts , event.target.value]
         event.target.value = ''
-        console.log('new artefacts:', project.artefacts)
     }
 
     async function saveProject() {

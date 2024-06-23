@@ -74,6 +74,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.0",
  "image 0.25.0",
+ "log",
  "rayon",
  "reqwest",
  "serde",

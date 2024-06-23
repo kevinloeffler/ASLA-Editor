@@ -45,15 +45,6 @@
         const response = await fetch('http://localhost:8000/image/',{
             method: 'POST', body: { type: 'Form', payload: formData }
         })
-
-        console.log(response)
-
-        /*
-        const response = await fetch('https://jsonplaceholder.typicode.com/posts/1', {
-            method: 'GET'
-        })
-        console.log('response:', response)
-        */
     }
 
     async function getImages() {
@@ -62,13 +53,7 @@
             return
         }
 
-        const files = await fs.readDir(selectedDirectory)
-        // console.log('FILES:')
-        // for (const file of files) {
-        //     console.log(file)
-        // }
-
-        return files
+        return await fs.readDir(selectedDirectory)
     }
 
 </script>

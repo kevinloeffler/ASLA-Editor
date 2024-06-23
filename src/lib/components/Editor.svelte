@@ -1,3 +1,5 @@
+<svelte:window on:keydown={handleKeyDown} />
+
 <div class="page">
 
     {#if showErrorMsg}
@@ -92,8 +94,6 @@
                 <img src="/assets/icons/chevron-right.svg" alt="Bild Vorwärts">
             </button>
         </div>
-
-        <button on:click={resetTransformation}>Center image</button>  <!-- TODO: implement this with a CMD + 0 -->
 
     </div>
 
@@ -341,6 +341,28 @@
         }
     }
 
+    /********* KEYBOARD SHORTCUTS *********/
+
+    async function handleKeyDown(event: KeyboardEvent) {
+        if (!event.ctrlKey && !event.metaKey) return
+
+        event.preventDefault()
+        switch (event.key) {
+            case '0':
+                resetTransformation()
+                break
+            case 'n':
+                await addEntity()
+                break
+            case 'ArrowRight':
+                dispatch('next_image')
+                break
+            case 'ArrowLeft':
+                dispatch('previous_image')
+                break
+        }
+    }
+
 </script>
 
 <style>
@@ -436,6 +458,13 @@
         display: flex;
         justify-content: space-between;
         gap: 4px;
+
+        position: sticky;
+        bottom: 0;
+        padding-bottom: 8px;
+        padding-top: 33px;
+        background: linear-gradient(to top, var(--background-color) 66%, rgba(255, 255, 255, 0) 100%);
+        z-index: 999;
     }
 
     .navigation > button {

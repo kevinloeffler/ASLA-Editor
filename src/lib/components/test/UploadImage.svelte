@@ -9,7 +9,6 @@
                 path: '/Users/kl/Kevin/Projects/ASLA/temp images/cre_6087_11.jpg',
                 name: 'test_image'
             })
-            console.log('result:', result)
         } catch (err) {
             console.error(err)
         }

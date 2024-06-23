@@ -22,8 +22,6 @@
     let isUploading = false
     const directoryUpdateInterval = 3000
 
-    $: console.log('isUploading:', isUploading)
-
     async function selectDirectory(): Promise<Optional<string>> {
         let selected = await open({
             directory: true,
@@ -46,9 +44,7 @@
         }
 
         const files = await fs.readDir(selectedDirectory)
-        console.log('files:', files)
         const images = files.filter(file => isImage(file.name))
-        console.log('images:', images)
         return images
     }
 
@@ -63,7 +59,6 @@
     }
 
     async function startUpload() {
-        console.log('starting upload...')
         isUploading = true
         await directoryManager.startUpload()
         const upload = async () => {

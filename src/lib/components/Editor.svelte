@@ -29,7 +29,7 @@
 
            {#each displayEntities.filter(e => e.entity.hasBoundingBox) || [] as entity (entity)}
                 <BoundingBox displayEntity="{entity}" scaleFactor="{scaleTranslationFactor}"
-                             on:save={(e) => handleEntitiesUpdate(e.detail.oldDisplayEntity, e.detail.newDisplayEntity)}
+                             on:save={(_) => handleEntitiesUpdate()}
                 />
             {/each}
 
@@ -49,7 +49,7 @@
                 <h2>Texterkennung</h2>
                 {#each displayEntities || [] as displayEntity (displayEntity.entity)}
                     <EntityComponent bind:displayEntity="{displayEntity}"
-                                     on:save={(e) => handleEntitiesUpdate(e.detail.oldDisplayEntity, e.detail.newDisplayEntity)}
+                                     on:save={(e) => handleEntitiesUpdate()}
                                      on:delete={(_) => handleEntityDelete(displayEntity)}
                                      on:start-drawing={(e) => startDrawingBoundingBox(e.detail.displayEntity)}
                     />
@@ -159,7 +159,7 @@
         toast.hide()
 
         metadata.entities.push(newEntity)
-        await handleEntitiesUpdate(displayEntity.entity, newEntity)
+        await handleEntitiesUpdate()
     }
 
     /********** DATA **********/
@@ -303,10 +303,7 @@
 
     /********* ENTITIES *********/
 
-    async function handleEntitiesUpdate(oldEntity: Entity, newEntity: Entity) {
-        const index = metadata.entities.findIndex(el => hashCode(el) === hashCode(oldEntity))
-        if (index === -1) return
-        metadata.entities[index] = newEntity
+    async function handleEntitiesUpdate() {
         metadata = metadata
         let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
     }

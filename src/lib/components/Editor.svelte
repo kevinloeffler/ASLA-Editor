@@ -38,6 +38,8 @@
 
     </div>
 
+    <EntitySelection position={entitySelectionPosition} entity={entitySelectionEntity} drawUpdate={handleEntitiesUpdate} />
+
     <!-- CONTROLS -->
 
     <div class="side-panel">
@@ -118,6 +120,8 @@
     import Toast from '../../routes/editor/Toast.svelte'
     import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
     import {hashCode} from '$lib/services/entity-service'
+    import EntitySelection from '../../routes/editor/EntitySelection.svelte'
+
 
     const dispatch = createEventDispatcher()
 
@@ -145,6 +149,8 @@
     let showErrorMsg = false
 
     let drawingOverlay: DrawBoundingBox
+    let entitySelectionEntity: Entity
+    let entitySelectionPosition: Optional<{x: number; y: number}>
 
     $: getImage(imagePath)  // reload image if path changes
 
@@ -154,16 +160,37 @@
     }
 
     async function startDrawingBoundingBox(displayEntity: DisplayEntity, isNew: boolean) {
-        console.log('EDITOR: start drawing bounding box:', displayEntity)
         toast.show('Box von der oberen linken Ecke aus aufziehen', ()=>{console.log('hello')}, undefined)
-        const newEntity = await drawingOverlay.draw(displayEntity.entity)
-        console.log('new entity:', newEntity)
+        const { newEntity, mouse } = await drawingOverlay.draw(displayEntity.entity)
         toast.hide()
 
         if (isNew) {
             metadata.entities.push(newEntity)
+            await handleEntitiesUpdate()
+
+            // Set entity selection overlay position
+            let xPosition = mouse.x
+            let yPosition = mouse.y
+
+            const sideBar = document.querySelector('.side-panel')! as HTMLElement
+            const rightEditorBorder = sideBar.getBoundingClientRect().x
+            const bottomEditorBorder = sideBar.getBoundingClientRect().height
+
+            if (mouse.x + 190 > rightEditorBorder) {
+                xPosition = xPosition - 140
+            }
+            if (mouse.y + 250 > bottomEditorBorder) {
+                yPosition = yPosition - 200
+            }
+
+            entitySelectionPosition = {x: xPosition, y: yPosition}
+            entitySelectionEntity = newEntity
         }
         await handleEntitiesUpdate()
+    }
+
+    function refreshMetadata() {
+        metadata = metadata
     }
 
     /********** DATA **********/

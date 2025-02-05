@@ -15,18 +15,18 @@
 
     let entity: Optional<Entity>
 
-    let resolveDrawPromise: ((entity: Entity) => void) | null = null
+    // let resolveDrawPromise: ((entity: Entity) => void) | null = null
+    let resolveDrawPromise: ((result: { newEntity: Entity, mouse: MouseEvent }) => void ) | null = null
     let visible = false
 
     let boundingBox: HTMLDivElement
     let showBoundingBox = false
     let isDrawing = false
 
-    export async function draw(ent: Entity): Promise<any> {
-        console.log('start drawing. ent:', ent)
+    export async function draw(ent: Entity): Promise<{ newEntity: Entity, mouse: MouseEvent }> {
         entity = ent
         visible = true
-        return new Promise<Entity>((resolve) => {
+        return new Promise((resolve) => {
             resolveDrawPromise = resolve
         })
     }
@@ -46,7 +46,7 @@
         boundingBox.style.height = `${e.offsetY - boundingBox.offsetTop}px`
     }
 
-    function handleMouseUp() {
+    function handleMouseUp(e: MouseEvent) {
         isDrawing = false
 
         // save entity
@@ -58,7 +58,10 @@
             entity.boundingBox.bottom = Math.round((boundingBox.offsetTop + boundingBox.offsetHeight) * scalingFactor)
         }
 
-        if (resolveDrawPromise) resolveDrawPromise(entity!)
+        if (resolveDrawPromise) resolveDrawPromise({
+            newEntity: entity!,
+            mouse: e,
+        })
         resolveDrawPromise = null
         visible = false
         showBoundingBox = false

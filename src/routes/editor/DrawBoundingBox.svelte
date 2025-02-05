@@ -23,6 +23,7 @@
     let isDrawing = false
 
     export async function draw(ent: Entity): Promise<any> {
+        console.log('start drawing. ent:', ent)
         entity = ent
         visible = true
         return new Promise<Entity>((resolve) => {

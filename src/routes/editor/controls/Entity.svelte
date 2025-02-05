@@ -49,13 +49,11 @@
 
     function updateHasBoundingBox() {
         if (displayEntity.entity.hasBoundingBox) {
-            const oldDisplayEntity = {...displayEntity}
+            console.log('Remove bounding box from entity')
             displayEntity.entity.hasBoundingBox = false
-            dispatch('save', {
-                oldDisplayEntity: oldDisplayEntity,
-                newDisplayEntity: displayEntity,
-            })
+            dispatch('save')
         } else {
+            console.log(`ENTITY: update has bounding box:`, displayEntity)
             dispatch('start-drawing', displayEntity)
         }
     }

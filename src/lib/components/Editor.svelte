@@ -51,7 +51,7 @@
                     <EntityComponent bind:displayEntity="{displayEntity}"
                                      on:save={(e) => handleEntitiesUpdate()}
                                      on:delete={(_) => handleEntityDelete(displayEntity)}
-                                     on:start-drawing={(e) => startDrawingBoundingBox(e.detail.displayEntity)}
+                                     on:start-drawing={(e) => startDrawingBoundingBox(e.detail, false)}
                     />
                 {/each}
                 <button on:click={addEntity} class="add-entity-button">Text hinzufügen</button>
@@ -153,12 +153,16 @@
         displayEntities = entities.map(e => ({entity: e, highlight: false})) || [] as DisplayEntity[]
     }
 
-    async function startDrawingBoundingBox(displayEntity: DisplayEntity) {
+    async function startDrawingBoundingBox(displayEntity: DisplayEntity, isNew: boolean) {
+        console.log('EDITOR: start drawing bounding box:', displayEntity)
         toast.show('Box von der oberen linken Ecke aus aufziehen', ()=>{console.log('hello')}, undefined)
         const newEntity = await drawingOverlay.draw(displayEntity.entity)
+        console.log('new entity:', newEntity)
         toast.hide()
 
-        metadata.entities.push(newEntity)
+        if (isNew) {
+            metadata.entities.push(newEntity)
+        }
         await handleEntitiesUpdate()
     }
 
@@ -330,7 +334,7 @@
             entity: newEntity,
             highlight: false,
         }
-        await startDrawingBoundingBox(newDisplayEntity)
+        await startDrawingBoundingBox(newDisplayEntity, true)
 
         let elements: NodeListOf<HTMLInputElement> = document.querySelectorAll('.entity-text-input')
         if (elements.length > 0) {

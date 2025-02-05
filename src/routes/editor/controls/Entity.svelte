@@ -5,7 +5,7 @@
     <div class="row">
         <div class="select-wrapper">
             <img class="select-chevron" src="/assets/icons/editor-label-chevron.svg" alt="Chevron nach unten">
-            <select class="label-select" bind:value={displayEntity.entity.label} on:change={save}>
+            <select class="label-select" bind:value={displayEntity.entity.label} bind:this={selectElement} on:change={save}>
                 {#each Object.entries(ENTITIES) as [_, label]}
                     <option value="{label}" >{entityToText(label)}</option>
                 {/each}
@@ -26,7 +26,9 @@
         </div>
     </div>
 
-    <input class="entity-text-input" type="text" bind:value={displayEntity.entity.text} on:change={save}>
+    <input class="entity-text-input" type="text" bind:value={displayEntity.entity.text} on:change={save}
+           on:keydown={handleKeyDown}
+    >
 </div>
 
 
@@ -37,6 +39,8 @@
     const dispatch = createEventDispatcher()
 
     export let displayEntity: DisplayEntity
+
+    let selectElement: HTMLSelectElement
 
     function save(_: Event) {
         displayEntity.entity.manuallyChanged = true
@@ -49,11 +53,9 @@
 
     function updateHasBoundingBox() {
         if (displayEntity.entity.hasBoundingBox) {
-            console.log('Remove bounding box from entity')
             displayEntity.entity.hasBoundingBox = false
             dispatch('save')
         } else {
-            console.log(`ENTITY: update has bounding box:`, displayEntity)
             dispatch('start-drawing', displayEntity)
         }
     }
@@ -69,6 +71,27 @@
         displayEntity = displayEntity
         dispatch('update', {entity: displayEntity})
     }
+
+    function handleKeyDown(e: KeyboardEvent) {
+        // Keyboard Shortcuts for the different labels
+        if (e.metaKey || e.ctrlKey) {
+            if (e.key === 'o') {
+                selectElement.value = 'LOC'
+            } else if (e.key === 'b') {
+                selectElement.value = 'CLT'
+            } else if (e.key === 'm') {
+                selectElement.value = 'MST'
+            } else if (e.key === 'd' || e.key === 'e') {
+                selectElement.value = 'DATE'
+            } else if (e.key === 'c') {
+                selectElement.value = 'CDATE'
+            } else if (e.key === 'u') {
+                selectElement.value = 'O'
+            }
+            selectElement.dispatchEvent(new Event('change'))
+        }
+    }
+
 
 </script>
 

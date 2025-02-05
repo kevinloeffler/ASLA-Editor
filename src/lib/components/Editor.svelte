@@ -189,10 +189,6 @@
         await handleEntitiesUpdate()
     }
 
-    function refreshMetadata() {
-        metadata = metadata
-    }
-
     /********** DATA **********/
 
     async function getImage(path: string) {

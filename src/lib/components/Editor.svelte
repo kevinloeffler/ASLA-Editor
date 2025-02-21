@@ -29,16 +29,20 @@
 
            {#each displayEntities.filter(e => e.entity.hasBoundingBox) || [] as entity (entity)}
                 <BoundingBox displayEntity="{entity}" scaleFactor="{scaleTranslationFactor}"
-                             on:save={(_) => handleEntitiesUpdate()}
+                             on:save={(_) => handleMetadataUpdate()}
                 />
             {/each}
 
             <DrawBoundingBox scalingFactor="{scaleTranslationFactor}" bind:this={drawingOverlay} />
+
+            <FormatOverlay metadata={metadata} resizing={isResizing} on:resize={(e) => metadata = e.detail}
+                           scaleTranslationFactor={scaleTranslationFactor} scale={scale}
+            />
         </div>
 
     </div>
 
-    <EntitySelection position={entitySelectionPosition} entity={entitySelectionEntity} drawUpdate={handleEntitiesUpdate} />
+    <EntitySelection position={entitySelectionPosition} entity={entitySelectionEntity} drawUpdate={handleMetadataUpdate} />
 
     <!-- CONTROLS -->
 
@@ -51,7 +55,7 @@
                 <h2>Texterkennung</h2>
                 {#each displayEntities || [] as displayEntity (displayEntity.entity)}
                     <EntityComponent bind:displayEntity="{displayEntity}"
-                                     on:save={(e) => handleEntitiesUpdate()}
+                                     on:save={(e) => handleMetadataUpdate()}
                                      on:delete={(_) => handleEntityDelete(displayEntity)}
                                      on:start-drawing={(e) => startDrawingBoundingBox(e.detail, false)}
                     />
@@ -73,6 +77,10 @@
                         on:update={debounce(handleGradingUpdate)}
                         min="{0}" max="{2}" step="{0.01}" initial="{metadata?.grading?.whiteBalance || 1}"
                 />
+            </div>
+
+            <div class="control-block">
+                <FormatControls on:toggle={() => isResizing = !isResizing}/>
             </div>
 
             {#if dev}
@@ -121,7 +129,8 @@
     import DrawBoundingBox from '../../routes/editor/DrawBoundingBox.svelte'
     import {hashCode} from '$lib/services/entity-service'
     import EntitySelection from '../../routes/editor/EntitySelection.svelte'
-
+    import FormatOverlay from '../../routes/editor/FormatOverlay.svelte'
+    import FormatControls from '../../routes/editor/controls/FormatControls.svelte'
 
     const dispatch = createEventDispatcher()
 
@@ -130,12 +139,15 @@
 
     let metadata: Metadata
     let displayEntities: DisplayEntity[] = []
+    $: metadata, handleMetadataUpdate()
     $: refreshDisplayEntities(metadata?.entities)
 
     let toast: Toast
 
     let image: HTMLImageElement
     let imageContainer: HTMLDivElement
+
+    $: getImage(imagePath)  // reload image if path changes
 
     let imageWidth: number = 0
     let imageHeight: number = 0
@@ -152,7 +164,7 @@
     let entitySelectionEntity: Entity
     let entitySelectionPosition: Optional<{x: number; y: number}>
 
-    $: getImage(imagePath)  // reload image if path changes
+    let isResizing: boolean = false
 
     function refreshDisplayEntities(entities: Optional<Entity[]>) {
         if (!entities) return []
@@ -166,7 +178,7 @@
 
         if (isNew) {
             metadata.entities.push(newEntity)
-            await handleEntitiesUpdate()
+            await handleMetadataUpdate()
 
             // Set entity selection overlay position
             let xPosition = mouse.x
@@ -186,7 +198,7 @@
             entitySelectionPosition = {x: xPosition, y: yPosition}
             entitySelectionEntity = newEntity
         }
-        await handleEntitiesUpdate()
+        await handleMetadataUpdate()
     }
 
     /********** DATA **********/
@@ -330,9 +342,10 @@
 
     /********* ENTITIES *********/
 
-    async function handleEntitiesUpdate() {
+    async function handleMetadataUpdate() {
+        if (!metadata) return
         metadata = metadata
-        let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
+        let _ = await invoke('update_metadata', {path: imagePath, metadata: metadata})
     }
 
     async function handleEntityDelete(displayEntity: DisplayEntity) {
@@ -340,7 +353,7 @@
         if (index === -1) return
         metadata.entities.splice(index, 1)
         metadata = metadata
-        let _ = await invoke('update_entities', {path: imagePath, metadata: metadata})
+        let _ = await invoke('update_metadata', {path: imagePath, metadata: metadata})
     }
 
     async function addEntity() {

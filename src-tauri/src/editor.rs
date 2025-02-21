@@ -129,7 +129,7 @@ fn update_pixel(pixel: Rgb<u8>, wb: (f64, f64, f64), contrast: f64, brightness: 
 
 
 #[tauri::command]
-pub fn update_entities(metadata: Metadata, state_object: State<'_, Mutex<Editor>>) -> Result<(), BackendError> {
+pub fn update_metadata(metadata: Metadata, state_object: State<'_, Mutex<Editor>>) -> Result<(), BackendError> {
     let state = state_object.lock().map_err(|err| handle_error(err))?;
     update_image_metadata(&*convert_jpg_to_json_path(&*state.current_path), &metadata)?;
     Ok(())
